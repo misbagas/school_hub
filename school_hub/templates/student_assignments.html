@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <title>Student Assignments</title>
+</head>
+<body>
+    <div class="container mt-4">
+        <h1>Assignments</h1>
+        <ul class="list-group">
+            {% for assignment in assignments %}
+            <li class="list-group-item">
+                <strong>{{ assignment.title }}</strong> - Due: {{ assignment.due_date }}
+                <p>{{ assignment.description }}</p>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+</body>
+</html>

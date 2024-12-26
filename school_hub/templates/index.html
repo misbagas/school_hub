@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    <style>
+        .hero {
+            background: url('https://img2.storyblok.com//f/90801/1920x600/9f6282960c/online-student.png') no-repeat center center;
+            background-size: cover;
+            color: white;
+            height: 400px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+        .hero h1 {
+            font-size: 4rem;
+            font-weight: bold;
+        }
+        .hero p {
+            font-size: 1.5rem;
+        }
+        .feature-icon {
+            font-size: 3rem;
+        }
+    </style>
+</head>
+<body>
+  
+    {% extends "base.html" %}
+
+{% block title %}Home{% endblock %}
+
+{% block content %}
+    <div class="hero">
+        <div>
+            <h1>Welcome to MySite</h1>
+            <p>Your one-stop solution for all your needs</p>
+            {% if not session.get('logged_in') %}
+            <!-- Display the "Get Started" button only if the user is not logged in -->
+            <a href="{{ url_for('main.register') }}" class="btn btn-primary btn-lg">Get Started</a>
+        {% endif %}
+            <a href="{{ url_for('main.about') }}" class="btn btn-outline-light btn-lg">Learn More</a>
+        </div>
+    </div>
+    <div class="container mt-5">
+        <h2 class="text-center mb-4">Our Features</h2>
+        <div class="row text-center">
+            <div class="col-md-4">
+                <span class="feature-icon text-primary">
+                    <i class="fas fa-check-circle"></i>
+                </span>
+                <h3>Quality Service</h3>
+                <p>We provide top-notch services for our clients.</p>
+            </div>
+            <div class="col-md-4">
+                <span class="feature-icon text-primary">
+                    <i class="fas fa-users"></i>
+                </span>
+                <h3>Community Driven</h3>
+                <p>Our community is at the heart of everything we do.</p>
+            </div>
+            <div class="col-md-4">
+                <span class="feature-icon text-primary">
+                    <i class="fas fa-shield-alt"></i>
+                </span>
+                <h3>Secure & Reliable</h3>
+                <p>Your security is our top priority, providing peace of mind.</p>
+            </div>
+        </div>
+    </div>
+    {% endblock %}
+    <div class="container mt-5">
+        <h2 class="text-center mb-4">What Our Users Say</h2>
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-body">
+                        <blockquote class="blockquote">
+                            <p>"MySite has transformed the way I do business. I couldn't be happier!"</p>
+                            <footer class="blockquote-footer">John Doe</footer>
+                        </blockquote>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-body">
+                        <blockquote class="blockquote">
+                            <p>"A fantastic platform with incredible support. Highly recommend!"</p>
+                            <footer class="blockquote-footer">Jane Smith</footer>
+                        </blockquote>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <footer class="bg-dark text-white mt-5 p-4 text-center">
+        <p>Follow us on:
+            <a href="#" class="text-white">Facebook</a> |
+            <a href="#" class="text-white">Twitter</a> |
+            <a href="#" class="text-white">Instagram</a>
+        </p>
+        <p>&copy; 2024 MySite. All Rights Reserved.</p>
+    </footer>
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script src="https://kit.fontawesome.com/a076d05399.js"></script>
+</body>
+</html>

@@ -1,0 +1,40 @@
+<div class="container mt-4">
+  <h2>Student Dashboard</h2>
+
+  <!-- Form for joining a class -->
+  <form id="joinClassForm" method="POST" action="{{ url_for('main.join_class') }}">
+    <input type="text" id="classCode" name="code" placeholder="Enter Class Code" required>
+    <button type="submit">Join Class</button>
+  </form>
+
+  <h3>Your Classes</h3>
+  <ul id="studentClassesList" class="list-group">
+    <!-- Dynamically populated -->
+  </ul>
+</div>
+
+<script>
+ document.addEventListener('DOMContentLoaded', function () {
+    fetch('{{ url_for("main.get_class_codes") }}')
+        .then(response => response.json())
+        .then(data => {
+            const classCodesList = document.getElementById('studentClassesList');
+            classCodesList.innerHTML = '';
+            data.class_codes.forEach(classCode => {
+                const listItem = document.createElement('li');
+                listItem.className = 'list-group-item';
+
+                // Create a clickable link
+                const link = document.createElement('a');
+                link.href = `/class/${classCode.code}`; // Adjust the URL pattern if needed
+                link.textContent = `${classCode.code}: ${classCode.description}`;
+                link.className = 'text-decoration-none';
+
+                listItem.appendChild(link);
+                classCodesList.appendChild(listItem);
+            });
+        })
+        .catch(error => console.error('Error fetching class codes:', error));
+});
+
+</script>

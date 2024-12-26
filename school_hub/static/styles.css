@@ -1,0 +1,122 @@
+/* General reset */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* Style for the entire navigation bar */
+nav {
+    background-color: #333;
+    position: sticky;
+    top: 0;
+    width: 100%;
+    z-index: 1000;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Container for the navigation links */
+nav ul {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* Navigation items */
+nav ul li {
+    position: relative;
+}
+
+/* Links within the navigation */
+nav ul li a {
+    display: block;
+    color: white;
+    text-align: center;
+    padding: 14px 20px;
+    text-decoration: none;
+    font-family: 'Arial', sans-serif;
+    font-size: 16px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+/* Hover effect for links */
+nav ul li a:hover {
+    background-color: #575757;
+    color: #fff;
+    transform: translateY(-3px); /* Adds a subtle lifting effect */
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Shadow effect */
+}
+
+/* Dropdown menu styling */
+nav ul li ul {
+    display: none; /* Hidden by default */
+    position: absolute;
+    background-color: #444;
+    top: 48px; /* Position just below the main nav item */
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    min-width: 160px;
+    z-index: 1000;
+    border-radius: 4px;
+}
+
+/* Display dropdown menu on hover */
+nav ul li:hover ul {
+    display: block;
+}
+
+/* Dropdown links */
+nav ul li ul li a {
+    padding: 10px 16px;
+    text-align: left;
+    font-size: 14px;
+    background-color: #444;
+}
+
+/* Hover effect for dropdown links */
+nav ul li ul li a:hover {
+    background-color: #575757;
+}
+
+/* Mobile menu toggle */
+nav .menu-icon {
+    display: none; /* Hide by default */
+    font-size: 28px;
+    color: white;
+    padding: 10px 20px;
+    cursor: pointer;
+}
+
+/* Mobile navigation menu */
+@media screen and (max-width: 768px) {
+    nav ul {
+        flex-direction: column; /* Stack items vertically */
+        display: none;
+        width: 100%;
+    }
+    
+    nav ul li {
+        text-align: center;
+        width: 100%;
+    }
+
+    nav ul li ul {
+        position: relative;
+        top: 0;
+        width: 100%;
+    }
+
+    nav .menu-icon {
+        display: block; /* Show the hamburger icon */
+    }
+
+    nav ul.active {
+        display: flex; /* Show menu when active */
+    }
+}
+

@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - Select Your Role</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        body {
+            background-color: #f4f4f9;
+        }
+        .container {
+            margin-top: 50px;
+        }
+        .card {
+            border: 1px solid #dedede;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        .card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+        .navbar-brand {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #fff;
+        }
+        .form-section {
+            display: none;
+        }
+        footer {
+            background-color: #333;
+            color: #fff;
+            padding: 20px 0;
+            text-align: center;
+        }
+        footer a {
+            color: #fff;
+            text-decoration: none;
+        }
+        footer a:hover {
+            text-decoration: underline;
+        }
+        
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <a class="navbar-brand" href="/">MySite</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav">
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('about') }}">About</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('contact') }}">Contact</a>
+                </li>
+            </ul>
+            <ul class="navbar-nav ml-auto">
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('login') }}">Login</a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+<div class="container">
+    <h2 class="text-center mb-4">Register</h2>
+    <form>
+        <!-- Select Role Section -->
+        <div class="form-group">
+            <label for="role">Select Your Role</label>
+            <select class="form-control" id="role" name="role" required>
+                <option value="">-- Select a Role --</option>
+                <option value="student">Student</option>
+                <option value="teacher">Teacher</option>
+                <option value="parent">Parent</option>
+                <option value="employee">Employee</option>
+            </select>
+        </div>
+
+        <!-- Common Fields -->
+        <div class="form-group">
+            <label for="name">Full Name</label>
+            <input type="text" class="form-control" id="name" placeholder="Enter your full name" required>
+        </div>
+        <div class="form-group">
+            <label for="email">Email address</label>
+            <input type="email" class="form-control" id="email" placeholder="Enter your email" required>
+        </div>
+        <div class="form-group">
+            <label for="password">Password</label>
+            <input type="password" class="form-control" id="password" placeholder="Password" required>
+        </div>
+
+        <!-- Student-Specific Fields -->
+        <div class="form-section" id="student-fields">
+            <h4>Student Information</h4>
+            <div class="form-group">
+                <label for="grade">Grade</label>
+                <select class="form-control" id="grade">
+                    <option value="">-- Select Your Grade --</option>
+                    <option value="9">9th Grade</option>
+                    <option value="10">10th Grade</option>
+                    <option value="11">11th Grade</option>
+                    <option value="12">12th Grade</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="subjects">Subjects</label>
+                <input type="text" class="form-control" id="subjects" placeholder="Enter your subjects">
+            </div>
+        </div>
+
+        <!-- Teacher-Specific Fields -->
+        <div class="form-section" id="teacher-fields">
+            <h4>Teacher Information</h4>
+            <div class="form-group">
+                <label for="department">Department</label>
+                <select class="form-control" id="department">
+                    <option value="">-- Select Department --</option>
+                    <option value="science">Science</option>
+                    <option value="math">Mathematics</option>
+                    <option value="english">English</option>
+                    <option value="history">History</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="experience">Years of Experience</label>
+                <input type="number" class="form-control" id="experience" placeholder="Enter years of teaching experience">
+            </div>
+        </div>
+
+        <!-- Parent-Specific Fields -->
+        <div class="form-section" id="parent-fields">
+            <h4>Parent Information</h4>
+            <div class="form-group">
+                <label for="child-name">Child's Name</label>
+                <input type="text" class="form-control" id="child-name" placeholder="Enter your child's name">
+            </div>
+            <div class="form-group">
+                <label for="child-grade">Child's Grade</label>
+                <select class="form-control" id="child-grade">
+                    <option value="">-- Select Your Child's Grade --</option>
+                    <option value="9">9th Grade</option>
+                    <option value="10">10th Grade</option>
+                    <option value="11">11th Grade</option>
+                    <option value="12">12th Grade</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Employee-Specific Fields -->
+        <div class="form-section" id="employee-fields">
+            <h4>Employee Information</h4>
+            <div class="form-group">
+                <label for="position">Position</label>
+                <input type="text" class="form-control" id="position" placeholder="Enter your position">
+            </div>
+            <div class="form-group">
+                <label for="department-emp">Department</label>
+                <select class="form-control" id="department-emp">
+                    <option value="">-- Select Department --</option>
+                    <option value="admin">Administration</option>
+                    <option value="finance">Finance</option>
+                    <option value="it">IT</option>
+                    <option value="support">Support</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Submit Button -->
+        <button type="submit" class="btn btn-primary btn-block">Register</button>
+    </form>
+</div>
+
+<!-- Footer Section -->
+<footer class="bg-dark text-white mt-5 p-4">
+    <div class="container text-center">
+        <p>Follow us on:
+            <a href="#" class="text-white">Facebook</a> |
+            <a href="#" class="text-white">Twitter</a> |
+            <a href="#" class="text-white">Instagram</a>
+        </p>
+        <p>&copy; 2024 MySite. All Rights Reserved.</p>
+        <p>
+            <a href="#" class="text-white">Privacy Policy</a> |
+            <a href="#" class="text-white">Terms of Service</a>
+        </p>
+    </div>
+</footer>
+
+<script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+<script>
+    $(document).ready(function() {
+        $('#role').change(function() {
+            // Hide all role-specific sections initially
+            $('.form-section').hide();
+            
+            // Show the relevant section based on the selected role
+            var selectedRole = $(this).val();
+            if (selectedRole === 'student') {
+                $('#student-fields').show();
+            } else if (selectedRole === 'teacher') {
+                $('#teacher-fields').show();
+            } else if (selectedRole === 'parent') {
+                $('#parent-fields').show();
+            } else if (selectedRole === 'employee') {
+                $('#employee-fields').show();
+            }
+        });
+    });
+</script>
+
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+</html>

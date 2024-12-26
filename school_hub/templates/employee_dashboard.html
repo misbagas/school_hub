@@ -1,0 +1,167 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+  <h2>Employee Dashboard</h2>
+
+  <div>
+    <!-- Form to add class codes -->
+    <form id="classCodeForm" method="POST" action="/save_class_code">
+      <!-- CSRF token input -->
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+      <div class="form-group">
+        <input type="text" name="code" id="code" class="form-control" placeholder="Enter class code" required>
+      </div>
+      <div class="form-group mt-2">
+        <input type="text" name="description" id="description" class="form-control" placeholder="Enter description" required>
+      </div>
+      <button type="button" id="submitButton" class="btn btn-primary mt-3">Submit</button>
+    </form>
+
+    <!-- Display existing class codes -->
+    <h3 class="mt-4">Generated Class Codes</h3>
+    <ul id="classCodesList" class="list-group">
+      <!-- This will be populated dynamically with JavaScript -->
+    </ul>
+  </div>
+</div>
+
+<script>
+  // Event listener for the Submit button
+  document.getElementById('submitButton').addEventListener('click', async function(event) {
+    event.preventDefault(); // Prevent the form from submitting traditionally
+
+    const code = document.getElementById('code').value.trim();
+    const description = document.getElementById('description').value.trim();
+
+    if (!code || !description) {
+        alert("Both fields are required!");
+        return;
+    }
+
+    const csrfToken = document.querySelector('input[name="csrf_token"]').value;
+
+    try {
+        const response = await fetch('/save_class_code', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken, // CSRF token in the header
+            },
+            body: JSON.stringify({ code, description }), // Sending form data as JSON
+        });
+
+        const result = await response.json();
+        console.log("Response from server:", result); // Debugging line
+
+        if (!response.ok) {
+            alert(result.message || "Failed to save class code.");
+            return;
+        }
+
+        alert(result.message || "Class code saved successfully!");
+
+        // Dynamically update the list of class codes
+        const classCodesList = document.getElementById('classCodesList');
+        const newItem = document.createElement('li');
+        newItem.textContent = `${code}: ${description}`;
+        newItem.classList.add('list-group-item', 'class-code-item');
+
+        // Create a delete button for the new class code
+        const deleteButton = document.createElement('button');
+        deleteButton.textContent = 'Delete';
+        deleteButton.classList.add('btn', 'btn-danger', 'btn-sm', 'ml-3', 'delete-btn');
+        deleteButton.setAttribute('data-id', result.id); // Set class code ID for the delete button
+        newItem.appendChild(deleteButton);
+
+        // Append the new item with the delete button
+        classCodesList.appendChild(newItem);
+
+        // Attach the delete button handler
+        attachDeleteHandler(deleteButton);
+
+        // Clear the form inputs
+        document.getElementById('classCodeForm').reset();
+    } catch (error) {
+        console.error("Error:", error);
+        alert("An error occurred while saving the class code.");
+    }
+});
+
+// Function to attach the delete button event listener
+function attachDeleteHandler(button) {
+    button.addEventListener('click', function() {
+        const classCodeId = this.getAttribute('data-id');
+
+        fetch(`/delete_class_code/${classCodeId}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+                // Include additional headers if needed, such as CSRF token for security
+            }
+        })
+        .then(async response => {
+            const data = await response.json();
+            console.log('Response Status:', response.status); // Debugging response status
+            console.log('Response Data:', data); // Debugging full response data
+
+            if (response.ok) {
+                // Optionally remove the element from the DOM
+                this.closest('.class-code-item').remove();
+                alert(data.message || 'Class code deleted successfully!');
+            } else {
+                alert(data.message || 'Failed to delete class code!');
+            }
+        })
+        .catch(error => console.error('Error:', error));
+    });
+}
+
+// Fetch existing class codes when the page loads
+window.addEventListener('DOMContentLoaded', async function() {
+    const csrfToken = document.querySelector('input[name="csrf_token"]').value;
+
+    try {
+        const response = await fetch('/get_class_codes', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken,
+            }
+        });
+
+        const classCodes = await response.json();
+        const classCodesList = document.getElementById('classCodesList');
+
+        // Clear any existing list
+        classCodesList.innerHTML = '';
+
+        // Populate the list with fetched class codes
+        classCodes.forEach(code => {
+            const listItem = document.createElement('li');
+            listItem.textContent = `${code.code}: ${code.description}`;
+            listItem.classList.add('list-group-item', 'class-code-item');
+
+            // Create a delete button for each class code
+            const deleteButton = document.createElement('button');
+            deleteButton.textContent = 'Delete';
+            deleteButton.classList.add('btn', 'btn-danger', 'btn-sm', 'ml-3', 'delete-btn');
+            deleteButton.setAttribute('data-id', code.id); // Set class code ID for the delete button
+            listItem.appendChild(deleteButton);
+
+            // Append the delete button to the list item
+            classCodesList.appendChild(listItem);
+
+            // Attach the delete button handler
+            attachDeleteHandler(deleteButton);
+        });
+    } catch (error) {
+        console.error('Error fetching class codes:', error);
+    }
+    
+});
+
+</script>
+
+{% endblock %}
