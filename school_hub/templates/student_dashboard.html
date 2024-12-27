@@ -11,6 +11,19 @@
   <ul id="studentClassesList" class="list-group">
     <!-- Dynamically populated -->
   </ul>
+    <!-- Assignments Section -->
+    <h3>Assignments</h3>
+    <ul id="assignmentsList" class="list-group">
+        {% for assignment in assignments %}
+        <li class="list-group-item">
+            <h5>{{ assignment.title }}</h5>
+            <p>{{ assignment.description }}</p>
+            <small>Due Date: {{ assignment.due_date.strftime('%Y-%m-%d') }}</small>
+        </li>
+        {% endfor %}
+    </ul>
+</div>
+
 </div>
 
 <script>
@@ -35,6 +48,61 @@
             });
         })
         .catch(error => console.error('Error fetching class codes:', error));
+});
+ document.addEventListener('DOMContentLoaded', function () {
+        // Fetch assignments
+        fetch('{{ url_for("main.get_assignments") }}')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const assignmentsList = document.getElementById('assignmentsList');
+                    assignmentsList.innerHTML = '';
+                    data.assignments.forEach(assignment => {
+                        const listItem = document.createElement('li');
+                        listItem.className = 'list-group-item';
+
+                        listItem.innerHTML = `
+                            <strong>${assignment.title}</strong><br>
+                            ${assignment.description}<br>
+                            <small>Due: ${assignment.due_date}</small><br>
+                            <small>Class Code: ${assignment.class_code}</small>
+                        `;
+
+                        assignmentsList.appendChild(listItem);
+                    });
+                } else {
+                    console.error('Error fetching assignments:', data.message);
+                }
+            })
+            .catch(error => console.error('Error fetching assignments:', error));
+    });
+
+    document.addEventListener('DOMContentLoaded', function () {
+    fetch('{{ url_for("main.get_assignments") }}')
+        .then(response => response.json())
+        .then(data => {
+            const assignmentsList = document.getElementById('assignmentsList');
+            assignmentsList.innerHTML = '';
+            data.forEach(assignment => {
+                const listItem = document.createElement('li');
+                listItem.className = 'list-group-item';
+
+                const title = document.createElement('h5');
+                title.textContent = assignment.title;
+
+                const description = document.createElement('p');
+                description.textContent = assignment.description;
+
+                const dueDate = document.createElement('small');
+                dueDate.textContent = `Due Date: ${assignment.due_date}`;
+
+                listItem.appendChild(title);
+                listItem.appendChild(description);
+                listItem.appendChild(dueDate);
+                assignmentsList.appendChild(listItem);
+            });
+        })
+        .catch(error => console.error('Error fetching assignments:', error));
 });
 
 </script>

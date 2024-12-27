@@ -10,6 +10,11 @@
             <textarea class="form-control" id="assignmentDescription" rows="3" placeholder="Enter assignment description" required></textarea>
         </div>
         <div class="mb-3">
+            <label for="studentSelect" class="form-label">Assign to Student</label>
+            <select class="form-select" id="studentSelect" required>
+                <option value="">Select a student</option>
+                <!-- Populated dynamically via JavaScript -->
+            </select>
             <label for="assignmentDueDate" class="form-label">Due Date</label>
             <input type="date" class="form-control" id="assignmentDueDate" required>
         </div>
@@ -42,4 +47,20 @@
         })
         .catch(error => console.error('Error creating assignment:', error));
     });
+
+    fetch('/get_students', {
+    method: 'GET'
+})
+.then(response => response.json())
+.then(data => {
+    const studentSelect = document.getElementById('studentSelect');
+    data.students.forEach(student => {
+        const option = document.createElement('option');
+        option.value = student.id;
+        option.textContent = `${student.username} (${student.email})`;
+        studentSelect.appendChild(option);
+    });
+})
+.catch(error => console.error('Error fetching students:', error));
+
 </script>

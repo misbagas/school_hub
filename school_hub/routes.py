@@ -5,7 +5,7 @@ from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 
 from school_hub.forms import EmployeeForm, LoginForm, RegisterForm
-from .models import AssignmentReminder, ClassCode, StudentClassCode, User
+from .models import Assignment, AssignmentReminder, ClassCode, StudentClassCode, User
 from . import db
 
 # Configure logging (ensure this is only done once, ideally in your main application file)
@@ -87,6 +87,15 @@ def dashboard():
         flash('Unauthorized role!', 'danger')
         return redirect(url_for('main.index'))
     
+@main.route('/student_dashboard', methods=['GET'])
+@login_required
+def student_dashboard():
+    if current_user.role == 'student':
+        assignments = AssignmentReminder.query.order_by(AssignmentReminder.due_date).all()
+        return render_template('student_dashboard.html', assignments=assignments)
+    flash("Unauthorized access!", "danger")
+    return redirect(url_for('main.index'))
+
 
 @main.route('/save_class_code', methods=['POST'])
 @login_required
@@ -212,8 +221,9 @@ def create_assignment():
     title = data.get('title', '').strip()
     description = data.get('description', '').strip()
     due_date = data.get('due_date', '').strip()
+    recipient_id = data.get('recipient_id')
 
-    if not title or not description or not due_date:
+    if not title or not description or not due_date or not recipient_id:
         return jsonify({'success': False, 'message': 'All fields are required.'}), 400
 
     try:
@@ -221,16 +231,44 @@ def create_assignment():
     except ValueError:
         return jsonify({'success': False, 'message': 'Invalid due date format.'}), 400
 
+    recipient = User.query.get(recipient_id)
+    if not recipient or recipient.role != 'student':
+        return jsonify({'success': False, 'message': 'Invalid recipient.'}), 404
+
     new_assignment = AssignmentReminder(
         title=title,
         description=description,
         due_date=due_date,
-        user_id=current_user.id
+        user_id=current_user.id,
+        recipient_id=recipient_id
     )
     db.session.add(new_assignment)
     db.session.commit()
 
     return jsonify({'success': True, 'message': 'Assignment created successfully!'}), 200
+@main.route('/get_students', methods=['GET'])
+@login_required
+def get_students():
+    if current_user.role != 'teacher':  # Restrict to teachers
+        return jsonify({'message': 'Unauthorized'}), 403
+
+    # Fetch students assigned to the teacher's class
+    students = User.query.filter_by(role='student', class_id=current_user.class_id).all()
+
+    return jsonify({
+        'students': [{'id': s.id, 'username': s.username, 'email': s.email} for s in students]
+    })
+
+
+@main.route('/get_assignments', methods=['GET'])
+@login_required
+def get_assignments():
+    assignments = AssignmentReminder.query.order_by(AssignmentReminder.due_date).all()
+    return jsonify([{
+        'title': a.title,
+        'description': a.description,
+        'due_date': a.due_date.strftime('%Y-%m-%d')
+    } for a in assignments])
 
 
 # Logout route
