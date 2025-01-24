@@ -71,7 +71,7 @@ def register():
 
     return render_template('register.html', form=form)  # Pass the form to the template
 # Dashboard route
-@main.route('/dashboard')
+@main.route('/dashboard', methods=['GET', 'POST'])
 @login_required
 def dashboard():
     if current_user.role == 'student':
@@ -80,12 +80,20 @@ def dashboard():
         return render_template('teacher_dashboard.html', user=current_user)
     elif current_user.role == 'employee':
         form = EmployeeForm()  # Create an instance of the form
-        return render_template('employee_dashboard.html', user=current_user, form=form)
+        
+        # Retrieve class codes created by the employee
+        class_codes = ClassCode.query.filter_by(creator_id=current_user.id).all()
+        
+        return render_template('employee_dashboard.html', 
+                               user=current_user, 
+                               form=form,
+                               class_codes=class_codes)  # Pass class codes to the template
     elif current_user.role == 'parent':
         return render_template('parent_dashboard.html', user=current_user)
     else:
         flash('Unauthorized role!', 'danger')
         return redirect(url_for('main.index'))
+
     
 @main.route('/student_dashboard', methods=['GET'])
 @login_required
@@ -100,51 +108,43 @@ def student_dashboard():
 @main.route('/save_class_code', methods=['POST'])
 @login_required
 def save_class_code():
-    if current_user.role != 'employee':  # Role-based access
-        return jsonify({'message': 'Unauthorized'}), 403
-
     data = request.get_json()
-    code = data.get('code', '').strip()
-    description = data.get('description', '').strip()
+    print(f"Received data: {data}")  # Debugging line
+
+    code = data.get('code')
+    description = data.get('description')
 
     if not code or not description:
-        return jsonify({'message': 'Both code and description are required.'}), 400
+        return jsonify({'message': 'Code and description are required'}), 400
 
-    existing_code = ClassCode.query.filter_by(code=code).first()
-    if existing_code:
-        return jsonify({'message': 'Class code already exists.'}), 400
-
-    new_class_code = ClassCode(
-        code=code,
-        description=description,
-        creator_id=current_user.id
-    )
-    db.session.add(new_class_code)
-    db.session.commit()
-
-    return jsonify({'id': new_class_code.id, 'message': 'Class code saved successfully!'}), 200
+    new_class_code = ClassCode(code=code, description=description, creator_id=current_user.id)
+    try:
+        db.session.add(new_class_code)
+        db.session.commit()
+        print(f"Class code saved: {new_class_code}")  # Debugging line
+        return jsonify({'message': 'Class code saved successfully', 'id': new_class_code.id}), 201
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error saving class code: {e}")  # Debugging line
+        return jsonify({'message': 'Error saving class code'}), 500
 
 
 @main.route('/get_class_codes', methods=['GET'])
 @login_required
 def get_class_codes():
-    print(f"User ID: {current_user.id}, Role: {current_user.role}")  # Add this for more clarity
-    if current_user.role == 'teacher':
+    try:
+        # Fetch all class codes created by the current user
         class_codes = ClassCode.query.filter_by(creator_id=current_user.id).all()
-    elif current_user.role == 'student':
-        class_codes = (
-            db.session.query(StudentClassCode, ClassCode)
-            .join(ClassCode, StudentClassCode.class_code_id == ClassCode.id)
-            .filter(StudentClassCode.student_id == current_user.id)
-            .all()
-        )
-        class_codes = [c[1] for c in class_codes]
-    else:
-        return jsonify({'message': f'Unauthorized role: {current_user.role}'}), 403
-
-    result = [{'code': c.code, 'description': c.description} for c in class_codes]
-    return jsonify({'class_codes': result}), 200
-
+        
+        # Serialize the data into a JSON-friendly format
+        class_codes_list = [
+            {'id': code.id, 'code': code.code, 'description': code.description} 
+            for code in class_codes
+        ]
+        return jsonify(class_codes_list), 200
+    except Exception as e:
+        logging.error(f"Error fetching class codes: {e}")
+        return jsonify({'message': 'Error fetching class codes'}), 500
 
 
 @main.route('/join_class', methods=['POST'])
