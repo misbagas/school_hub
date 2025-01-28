@@ -2,8 +2,9 @@ from datetime import datetime
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 from school_hub import db
-from sqlalchemy.orm import relationship
 
+
+# User Model
 class User(UserMixin, db.Model):
     __tablename__ = 'users'
 
@@ -18,12 +19,11 @@ class User(UserMixin, db.Model):
 
     # Relationships
     class_info = db.relationship('Class', back_populates='users')
-    assignments = db.relationship('AssignmentReminder', foreign_keys='AssignmentReminder.user_id', back_populates='creator')  # This line is fine
+    assignments = db.relationship('AssignmentReminder', back_populates='user', foreign_keys='AssignmentReminder.user_id')
     class_codes = db.relationship('ClassCode', back_populates='creator')
-    created_users = db.relationship('User', backref=db.backref('creator_user', remote_side=[id]), lazy=True)
+    class_joins = db.relationship('ClassJoin', back_populates='student')
 
-    creator = db.relationship('User', remote_side=[id], backref=db.backref('created_by_user', lazy='dynamic'))
-
+    # Methods
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
 
@@ -42,68 +42,66 @@ class User(UserMixin, db.Model):
         return f"<User(username={self.username}, email={self.email}, role={self.role})>"
 
 
-
-class AssignmentReminder(db.Model):
-    __tablename__ = 'assignments'
-
-    id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(200), nullable=False)
-    description = db.Column(db.Text, nullable=False)
-    due_date = db.Column(db.Date, nullable=False)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    recipient_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
-
-    # Relationships
-    recipient = db.relationship('User', foreign_keys=[recipient_id])
-    creator = db.relationship('User', foreign_keys=[user_id], back_populates='assignments')
-
-    def __repr__(self):
-        return f"<AssignmentReminder(title={self.title})>"
-
-
-class Announcement(db.Model):
-    __tablename__ = 'announcements'
-
-    id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(100), nullable=False)
-    content = db.Column(db.Text, nullable=False)
-    created_at = db.Column(db.DateTime, nullable=False, default=db.func.now())
-
-    def __repr__(self):
-        return f"<Announcement(title={self.title})>"
-
+# Class Model
 class Class(db.Model):
     __tablename__ = 'classes'
 
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), nullable=False)
+    name = db.Column(db.String(255), nullable=False)
 
     # Relationships
     users = db.relationship('User', back_populates='class_info')
     students = db.relationship('Student', back_populates='class_info')
+    class_joins = db.relationship('ClassJoin', back_populates='class_info')
 
-    def __repr__(self):
-        return f"<Class(name={self.name})>"
 
-class Student(db.Model):
-    __tablename__ = 'students'
+# Assignment Model
+class Assignment(db.Model):
+    __tablename__ = 'assignments'
 
     id = db.Column(db.Integer, primary_key=True)
-    first_name = db.Column(db.String(100), nullable=False)
-    last_name = db.Column(db.String(100), nullable=False)
-    email = db.Column(db.String(100), unique=True, nullable=False)
-    dob = db.Column(db.Date, nullable=False)
-    enrollment_date = db.Column(db.TIMESTAMP, default=db.func.current_timestamp())
-    status = db.Column(db.Enum('active', 'inactive'), default='active')
-    password_hash = db.Column(db.String(128), nullable=False)
-    class_id = db.Column(db.Integer, db.ForeignKey('classes.id'), nullable=True)
+    name = db.Column(db.String(255), nullable=False)
+    description = db.Column(db.Text)
+    due_date = db.Column(db.Date)
+    teacher_id = db.Column(db.Integer, db.ForeignKey('teachers.id'))
 
     # Relationships
-    class_info = db.relationship('Class', back_populates='students')
+    teacher = db.relationship('Teacher', backref='teacher_assignments')
+    reminders = db.relationship('AssignmentReminder', backref='assignment', lazy=True, cascade='all, delete-orphan')
 
-    def __repr__(self):
-        return f"<Student(first_name={self.first_name}, last_name={self.last_name})>"
 
+# AssignmentReminder Model
+class AssignmentReminder(db.Model):
+    __tablename__ = 'assignment_reminders'
+
+    id = db.Column(db.Integer, primary_key=True)
+    assignment_id = db.Column(db.Integer, db.ForeignKey('assignments.id', ondelete='CASCADE'), nullable=False)
+    reminder_date = db.Column(db.Date)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+    creator_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+
+    # Relationships
+    user = db.relationship('User', back_populates='assignments', foreign_keys=[user_id])
+
+
+# ClassJoin Model
+# ClassJoin Model
+class ClassJoin(db.Model):
+    __tablename__ = 'class_join'
+
+    id = db.Column(db.Integer, primary_key=True)
+    student_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    class_id = db.Column(db.Integer, db.ForeignKey('classes.id'), nullable=False)
+    teacher_id = db.Column(db.Integer, db.ForeignKey('teachers.id'), nullable=False)  # Add teacher_id
+
+    # Relationships
+    student = db.relationship('User', back_populates='class_joins')
+    class_info = db.relationship('Class', back_populates='class_joins')
+    teacher = db.relationship('Teacher', backref='class_joins')  # Define relationship with Teacher
+
+
+
+# Teacher Model
 class Teacher(db.Model):
     __tablename__ = 'teachers'
 
@@ -111,30 +109,13 @@ class Teacher(db.Model):
     name = db.Column(db.String(100), nullable=False)
 
     # Relationships
-    assignments = db.relationship('Assignment', back_populates='teacher', lazy=True)
+    assignments = db.relationship('Assignment', back_populates='teacher')
 
     def __repr__(self):
         return f"<Teacher(name={self.name})>"
 
-class Assignment(db.Model):
-    __tablename__ = 'assignments'
-    __table_args__ = {'extend_existing': True}  # Allow redefining the table
 
-    id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(255), nullable=False)
-    description = db.Column(db.Text, nullable=True)
-    due_date = db.Column(db.DateTime, nullable=True)
-    teacher_id = db.Column(db.Integer, db.ForeignKey('teachers.id'), nullable=False)
-    class_code_id = db.Column(db.Integer, db.ForeignKey('class_code.id'), nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-
-    # Relationships
-    teacher = db.relationship('Teacher', back_populates='assignments')
-    class_code = db.relationship('ClassCode', backref=db.backref('assignments', lazy=True))
-
-    def __repr__(self):
-        return f"<Assignment(title={self.title})>"
-
+# ClassCode Model
 class ClassCode(db.Model):
     __tablename__ = 'class_code'
 
@@ -150,6 +131,8 @@ class ClassCode(db.Model):
     def __repr__(self):
         return f"<ClassCode(code={self.code})>"
 
+
+# StudentClassCode Model
 class StudentClassCode(db.Model):
     __tablename__ = 'student_class_codes'
 
@@ -166,3 +149,50 @@ class StudentClassCode(db.Model):
 
     def __repr__(self):
         return f"<StudentClassCode(code={self.code})>"
+
+
+# Course Model (Optional)
+class Course(db.Model):
+    __tablename__ = 'courses'
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.String(250))
+
+    # Relationships
+    students = db.relationship('Student', back_populates='course')
+
+    def __repr__(self):
+        return f"<Course(name={self.name})>"
+
+# Employee Model (Optional)
+class Employee(db.Model):
+    __tablename__ = 'employees'
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+
+    def __repr__(self):
+        return f"<Employee(name={self.name})>"
+
+# Student Model
+class Student(db.Model):
+    __tablename__ = 'students'
+
+    id = db.Column(db.Integer, primary_key=True)
+    first_name = db.Column(db.String(100), nullable=False)
+    last_name = db.Column(db.String(100), nullable=False)
+    email = db.Column(db.String(100), unique=True, nullable=False)
+    dob = db.Column(db.Date, nullable=False)
+    enrollment_date = db.Column(db.TIMESTAMP, default=db.func.current_timestamp())
+    status = db.Column(db.Enum('active', 'inactive'), default='active')
+    password_hash = db.Column(db.String(128), nullable=False)
+    class_id = db.Column(db.Integer, db.ForeignKey('classes.id'), nullable=True)
+    course_id = db.Column(db.Integer, db.ForeignKey('courses.id'), nullable=True)  # Added ForeignKey
+
+    # Relationships
+    class_info = db.relationship('Class', back_populates='students')
+    course = db.relationship('Course', back_populates='students')  # Back-populates Course.students
+
+    def __repr__(self):
+        return f"<Student(first_name={self.first_name}, last_name={self.last_name})>"

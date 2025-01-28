@@ -3,9 +3,8 @@ import logging
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
-
 from school_hub.forms import EmployeeForm, LoginForm, RegisterForm
-from .models import Assignment, AssignmentReminder, ClassCode, StudentClassCode, User
+from .models import ClassCode, StudentClassCode, User, ClassJoin  # Import ClassJoin
 from . import db
 
 # Configure logging (ensure this is only done once, ideally in your main application file)
@@ -94,7 +93,8 @@ def dashboard():
         flash('Unauthorized role!', 'danger')
         return redirect(url_for('main.index'))
 
-    
+
+
 @main.route('/student_dashboard', methods=['GET'])
 @login_required
 def student_dashboard():
@@ -269,6 +269,45 @@ def get_assignments():
         'description': a.description,
         'due_date': a.due_date.strftime('%Y-%m-%d')
     } for a in assignments])
+
+
+@main.route('/get_joined_students', methods=['GET'])
+@login_required
+def get_joined_students():
+    if current_user.role != 'teacher':
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 403
+
+    # Get class_code from the query string
+    class_code = request.args.get('class_code')
+    if not class_code:
+        return jsonify({'success': False, 'message': 'Class code is required'}), 400
+
+    # Fetch the class using the provided class code
+    class_code_entry = ClassCode.query.filter_by(code=class_code).first()
+    if not class_code_entry:
+        return jsonify({'success': False, 'message': 'Class code not found'}), 404
+
+    # Get all students who joined using this class code
+    joined_students = StudentClassCode.query.filter_by(class_code_id=class_code_entry.id).all()
+    students_data = []
+
+    for join in joined_students:
+        student = User.query.get(join.student_id)
+        if student:
+            students_data.append({
+                'id': student.id,
+                'username': student.username,
+                'email': student.email
+            })
+
+    return jsonify({'success': True, 'students': students_data})
+
+
+# In routes.py (or where the function is)
+def get_joined_students():
+    from school_hub.models import ClassJoin  # Import inside the function
+    joined_students = ClassJoin.query.filter_by(teacher_id=current_user.id).all()
+    return render_template('joined_students.html', students=joined_students)
 
 
 # Logout route

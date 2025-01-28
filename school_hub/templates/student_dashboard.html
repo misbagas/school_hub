@@ -1,108 +1,50 @@
-<div class="container mt-4">
-  <h2>Student Dashboard</h2>
+<!-- student_dashboard.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Dashboard</title>
+</head>
+<body>
+    <div>
+        <input type="text" id="classCode" placeholder="Enter class code">
+        <button id="joinClassBtn">Join Class</button>
+    </div>
 
-  <!-- Form for joining a class -->
-  <form id="joinClassForm" method="POST" action="{{ url_for('main.join_class') }}">
-    <input type="text" id="classCode" name="code" placeholder="Enter Class Code" required>
-    <button type="submit">Join Class</button>
-  </form>
+    <!-- Section to display the class code entered -->
+    <div id="classCodeSection" style="margin-top: 20px;">
+        <h3>Entered Class Code:</h3>
+        <p id="displayClassCode"></p>
+    </div>
 
-  <h3>Your Classes</h3>
-  <ul id="studentClassesList" class="list-group">
-    <!-- Dynamically populated -->
-  </ul>
-    <!-- Assignments Section -->
-    <h3>Assignments</h3>
-    <ul id="assignmentsList" class="list-group">
-        {% for assignment in assignments %}
-        <li class="list-group-item">
-            <h5>{{ assignment.title }}</h5>
-            <p>{{ assignment.description }}</p>
-            <small>Due Date: {{ assignment.due_date.strftime('%Y-%m-%d') }}</small>
-        </li>
-        {% endfor %}
-    </ul>
-</div>
+    <script>
+        document.getElementById('joinClassBtn').addEventListener('click', () => {
+            const classCode = document.getElementById('classCode').value;
 
-</div>
+            // Display the entered class code in the section
+            document.getElementById('displayClassCode').textContent = classCode;
 
-<script>
- document.addEventListener('DOMContentLoaded', function () {
-    fetch('{{ url_for("main.get_class_codes") }}')
-        .then(response => response.json())
-        .then(data => {
-            const classCodesList = document.getElementById('studentClassesList');
-            classCodesList.innerHTML = '';
-            data.class_codes.forEach(classCode => {
-                const listItem = document.createElement('li');
-                listItem.className = 'list-group-item';
-
-                // Create a clickable link
-                const link = document.createElement('a');
-                link.href = `/class/${classCode.code}`; // Adjust the URL pattern if needed
-                link.textContent = `${classCode.code}: ${classCode.description}`;
-                link.className = 'text-decoration-none';
-
-                listItem.appendChild(link);
-                classCodesList.appendChild(listItem);
-            });
-        })
-        .catch(error => console.error('Error fetching class codes:', error));
-});
- document.addEventListener('DOMContentLoaded', function () {
-        // Fetch assignments
-        fetch('{{ url_for("main.get_assignments") }}')
+            fetch('/join_class', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ code: classCode })
+            })
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    const assignmentsList = document.getElementById('assignmentsList');
-                    assignmentsList.innerHTML = '';
-                    data.assignments.forEach(assignment => {
-                        const listItem = document.createElement('li');
-                        listItem.className = 'list-group-item';
-
-                        listItem.innerHTML = `
-                            <strong>${assignment.title}</strong><br>
-                            ${assignment.description}<br>
-                            <small>Due: ${assignment.due_date}</small><br>
-                            <small>Class Code: ${assignment.class_code}</small>
-                        `;
-
-                        assignmentsList.appendChild(listItem);
-                    });
+                    alert('Class joined successfully!');
                 } else {
-                    console.error('Error fetching assignments:', data.message);
+                    alert(`Error: ${data.message}`);
                 }
             })
-            .catch(error => console.error('Error fetching assignments:', error));
-    });
-
-    document.addEventListener('DOMContentLoaded', function () {
-    fetch('{{ url_for("main.get_assignments") }}')
-        .then(response => response.json())
-        .then(data => {
-            const assignmentsList = document.getElementById('assignmentsList');
-            assignmentsList.innerHTML = '';
-            data.forEach(assignment => {
-                const listItem = document.createElement('li');
-                listItem.className = 'list-group-item';
-
-                const title = document.createElement('h5');
-                title.textContent = assignment.title;
-
-                const description = document.createElement('p');
-                description.textContent = assignment.description;
-
-                const dueDate = document.createElement('small');
-                dueDate.textContent = `Due Date: ${assignment.due_date}`;
-
-                listItem.appendChild(title);
-                listItem.appendChild(description);
-                listItem.appendChild(dueDate);
-                assignmentsList.appendChild(listItem);
+            .catch((error) => {
+                console.error('Error:', error);
+                alert('An error occurred while trying to join the class.');
             });
-        })
-        .catch(error => console.error('Error fetching assignments:', error));
-});
-
-</script>
+        });
+    </script>
+</body>
+</html>
