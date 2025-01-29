@@ -4,36 +4,95 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>User Profile</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
 </head>
-<body>
-    <div class="container">
-        <h1>User Profile</h1>
-        <div class="profile-section">
-            <form action="{{ url_for('main.profile') }}" method="POST" enctype="multipart/form-data">
-                <div class="profile-picture">
-                    <!-- Display the uploaded profile picture or default image -->
-                    <img id="profile-img" 
-                         src="{{ url_for('static', filename='uploads/' + user.profile_picture) if user.profile_picture else url_for('static', filename='images/default-profile.png') }}" 
-                         alt="Profile Picture">
-                    <input type="file" id="profile-pic-input" name="profile_picture" accept="image/*">
-                </div>
-                <div class="profile-info">
-                    <p><strong>Username:</strong> {{ user.username }}</p>
-                    <p><strong>Email:</strong> {{ user.email }}</p>
-                    <p><strong>Role:</strong> {{ user.role }}</p>
-                    <p><strong>Joined on:</strong> 
-                        {% if user.date_joined %}
-                            {{ user.date_joined.strftime('%B %d, %Y') }}
-                        {% else %}
-                            Not available
-                        {% endif %}
-                    </p>
-                </div>
-                <button type="submit">Save Changes</button>
-            </form>
+<body class="bg-light">
+
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <div class="container-fluid">
+            <!-- Dynamically change navbar brand based on user role -->
+            <a class="navbar-brand" href="#">
+                {% if user.role == 'teacher' %}
+                    Teacher Dashboard
+                {% elif user.role == 'student' %}
+                    Student Dashboard
+                {% elif user.role == 'parent' %}
+                    Parent Dashboard
+                {% elif user.role == 'employee' %}
+                    Employee Dashboard
+                {% else %}
+                    User Dashboard
+                {% endif %}
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('main.profile') }}">Profile</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('main.messages') }}">Messages</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/teacher/notifications">Notifications</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    
+
+    <!-- User Profile Container -->
+    <div class="container mt-5">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h1 class="card-title text-center">User Profile</h1>
+                <form action="{{ url_for('main.profile') }}" method="POST" enctype="multipart/form-data">
+                    <div class="d-flex justify-content-center">
+                        <!-- Profile Picture Section -->
+                        <div class="text-center">
+                            <div class="profile-picture mb-3">
+                                <!-- Display the uploaded profile picture or default image -->
+                                <img id="profile-img" class="img-fluid rounded-circle" 
+                                     src="{{ url_for('static', filename='uploads/' + user.profile_picture) if user.profile_picture else url_for('static', filename='images/default-profile.png') }}" 
+                                     alt="Profile Picture" style="width: 150px; height: 150px; object-fit: cover;">
+                            </div>
+                            <label for="profile-pic-input" class="btn btn-primary">Choose File</label>
+                            <input type="file" id="profile-pic-input" name="profile_picture" accept="image/*" style="display: none;">
+                        </div>
+                    </div>
+
+                    <!-- Profile Info Section -->
+                    <div class="mt-4">
+                        <p><strong>Username:</strong> {{ user.username }}</p>
+                        <p><strong>Email:</strong> {{ user.email }}</p>
+                        <p><strong>Role:</strong> {{ user.role }}</p>
+                        <p><strong>Joined on:</strong> 
+                            {% if user.date_joined %}
+                                {{ user.date_joined.strftime('%B %d, %Y') }}
+                            {% else %}
+                                Not available
+                            {% endif %}
+                        </p>
+                    </div>
+
+                    <!-- Save Changes Button -->
+                    <div class="text-center">
+                        <button type="submit" class="btn btn-success">Save Changes</button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.min.js"></script>
 
     <script>
         document.getElementById("profile-pic-input").addEventListener("change", function(event) {

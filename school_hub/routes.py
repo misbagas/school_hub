@@ -76,6 +76,7 @@ def register():
 @main.route('/dashboard', methods=['GET', 'POST'])
 @login_required
 def dashboard():
+    user = current_user  # Retrieve the current logged-in user
     if current_user.role == 'student':
         return render_template('student_dashboard.html', user=current_user)
     elif current_user.role == 'teacher':
