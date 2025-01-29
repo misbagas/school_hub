@@ -22,7 +22,8 @@ class User(UserMixin, db.Model):
     assignments = db.relationship('AssignmentReminder', back_populates='user', foreign_keys='AssignmentReminder.user_id')
     class_codes = db.relationship('ClassCode', back_populates='creator')
     class_joins = db.relationship('ClassJoin', back_populates='student')
-
+    profile_picture = db.Column(db.String(120), nullable=True)  # Store filename of profile picture
+    date_joined = db.Column(db.DateTime, default=datetime.utcnow)  # <-- date_joined field
     # Methods
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -84,8 +85,6 @@ class AssignmentReminder(db.Model):
     user = db.relationship('User', back_populates='assignments', foreign_keys=[user_id])
 
 
-# ClassJoin Model
-# ClassJoin Model
 class ClassJoin(db.Model):
     __tablename__ = 'class_join'
 
@@ -196,3 +195,15 @@ class Student(db.Model):
 
     def __repr__(self):
         return f"<Student(first_name={self.first_name}, last_name={self.last_name})>"
+
+class Message(db.Model):
+    __tablename__ = 'messages'
+
+    id = db.Column(db.Integer, primary_key=True)
+    sender_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    receiver_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    content = db.Column(db.Text, nullable=False)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+
+    sender = db.relationship('User', foreign_keys=[sender_id], backref='sent_messages')
+    receiver = db.relationship('User', foreign_keys=[receiver_id], backref='received_messages')

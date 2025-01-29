@@ -6,12 +6,13 @@ import os
 from flask_wtf.csrf import CSRFProtect
 from requests import request, session
 
+
 # Initialize db object
 db = SQLAlchemy()
 login_manager = LoginManager()
 
 def create_app():
-    app = Flask(__name__)
+    app = Flask(__name__, template_folder='/home/misbahskuy/school_hub/school_hub/templates')  # Add template_folder here
     
     # Configuration
     app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'c0af5ac84d3fe3a898fbc6866c65d6bba8690a7891213e25')  # Using default fallback
@@ -24,7 +25,10 @@ def create_app():
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.config['SQLALCHEMY_ECHO'] = True
     app.config['WTF_CSRF_ENABLED'] = False
-    
+    app.config['UPLOAD_FOLDER'] = os.path.join(app.root_path, 'static', 'uploads')
+
+# Ensure the 'uploads' folder exists
+    os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
     csrf = CSRFProtect(app)
     
     # Initialize the app with the configurations

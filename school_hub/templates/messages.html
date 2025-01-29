@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Messages</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">Dashboard</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">Profile</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">Messages</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">Notifications</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container mt-4">
+        <h2>Messages</h2>
+
+        <!-- Contact Search -->
+        <div class="mb-3">
+            <input type="text" id="contact-search" class="form-control" placeholder="Search by username or email">
+            <div id="contact-results" class="list-group mt-2"></div>
+        </div>
+
+        <!-- Message Form -->
+        <form id="message-form" method="POST">
+            {{ form.hidden_tag() }}
+            <div class="input-group">
+                {{ form.content(class="form-control", placeholder="Type your message...") }}
+                <button type="submit" class="btn btn-primary">Send</button>
+            </div>
+        </form>
+
+        <!-- Messages List -->
+        <h3 class="mt-4">Your Messages</h3>
+        <div id="messages-container">
+            {% for message in messages %}
+                <div class="message-item border rounded p-2 my-2 position-relative">
+                    <p><strong>{{ message.sender.username }}</strong> → <strong>{{ message.receiver.username }}</strong>: {{ message.content }}</p>
+                    <small class="text-muted">{{ message.timestamp }}</small>
+                    {% if message.sender.id == current_user.id %}
+                        <button class="btn btn-danger btn-sm delete-message" data-message-id="{{ message.id }}">Delete</button>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Search for contacts
+        document.getElementById("contact-search").addEventListener("input", function() {
+            let query = this.value;
+            if (query.length > 1) {
+                fetch(`/search_contacts?query=${query}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        let resultsDiv = document.getElementById("contact-results");
+                        resultsDiv.innerHTML = "";
+                        data.forEach(user => {
+                            let div = document.createElement("div");
+                            div.className = "list-group-item list-group-item-action";
+                            div.textContent = user.username + " (" + user.email + ")";
+                            div.addEventListener("click", function() {
+                                document.getElementById("contact-search").value = user.username;
+                                resultsDiv.innerHTML = "";
+                            });
+                            resultsDiv.appendChild(div);
+                        });
+                    });
+            }
+        });
+
+        // Delete a message
+        document.querySelectorAll(".delete-message").forEach(button => {
+            button.addEventListener("click", function() {
+                let messageId = this.getAttribute("data-message-id");
+                fetch(`/delete_message/${messageId}`, { method: "DELETE" })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            this.closest(".message-item").remove();
+                        }
+                    });
+            });
+        });
+    </script>
+</body>
+</html>

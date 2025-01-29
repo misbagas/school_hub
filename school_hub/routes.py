@@ -1,11 +1,14 @@
 from datetime import datetime
 import logging
-from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, current_app
 from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
-from school_hub.forms import EmployeeForm, LoginForm, RegisterForm
-from .models import ClassCode, StudentClassCode, User, ClassJoin  # Import ClassJoin
+from school_hub.forms import EmployeeForm, LoginForm, RegisterForm, MessageForm
+from .models import ClassCode, StudentClassCode, User, ClassJoin, Message # Import ClassJoin
 from . import db
+import os
+from werkzeug.utils import secure_filename
+
 
 # Configure logging (ensure this is only done once, ideally in your main application file)
 logging.basicConfig(
@@ -309,7 +312,80 @@ def get_joined_students():
     joined_students = ClassJoin.query.filter_by(teacher_id=current_user.id).all()
     return render_template('joined_students.html', students=joined_students)
 
+@main.route('/messages', methods=['GET', 'POST'])
+@login_required
+def messages():
+    form = MessageForm()
+    if form.validate_on_submit():
+        content = form.content.data
+        receiver_username = request.form.get("receiver")
 
+        receiver = User.query.filter_by(username=receiver_username).first()
+        if not receiver:
+            flash("User not found!", "danger")
+            return redirect(url_for("main.messages"))
+
+        message = Message(sender_id=current_user.id, receiver_id=receiver.id, content=content, timestamp=datetime.utcnow())
+        db.session.add(message)
+        db.session.commit()
+        return redirect(url_for("main.messages"))
+
+    messages = Message.query.filter((Message.sender_id == current_user.id) | (Message.receiver_id == current_user.id)).order_by(Message.timestamp.desc()).all()
+    return render_template("messages.html", form=form, messages=messages)
+
+
+@main.route('/delete_message/<int:message_id>', methods=['DELETE'])
+@login_required
+def delete_message(message_id):
+    message = Message.query.get_or_404(message_id)
+    if message.sender_id != current_user.id:
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 403
+
+    db.session.delete(message)
+    db.session.commit()
+    return jsonify({'success': True, 'message': 'Message deleted successfully'})
+
+
+@main.route('/search_contacts')
+@login_required
+def search_contacts():
+    query = request.args.get("query", "").strip()
+    if not query:
+        return jsonify([])
+
+    contacts = User.query.filter((User.username.ilike(f"%{query}%")) | (User.email.ilike(f"%{query}%"))).limit(5).all()
+    return jsonify([{"id": user.id, "username": user.username, "email": user.email} for user in contacts])
+
+# Allowed file extensions
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
+
+# Check if the file has a valid extension
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+@main.route('/profile', methods=['GET', 'POST'])
+def profile():
+    user = User.query.get(current_user.id)  # Assuming you're using Flask-Login for current_user
+
+    if request.method == 'POST':
+        # Check if the profile picture is part of the request
+        if 'profile_picture' in request.files:
+            file = request.files['profile_picture']
+            
+            # If the user uploads a file, save it
+            if file and allowed_file(file.filename):
+                filename = secure_filename(file.filename)  # Ensure the filename is safe
+                file_path = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)  # Use current_app here
+                file.save(file_path)
+
+                # Update the user's profile picture in the database
+                user.profile_picture = filename
+                db.session.commit()
+
+        return redirect(url_for('main.profile'))
+
+    return render_template('profile.html', user=user)
+    
 # Logout route
 @main.route('/logout')
 @login_required
