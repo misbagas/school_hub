@@ -9,8 +9,6 @@ from . import db
 import os
 from werkzeug.utils import secure_filename
 
-
-# Configure logging (ensure this is only done once, ideally in your main application file)
 logging.basicConfig(
     level=logging.DEBUG,
     format='%(asctime)s - %(levelname)s - %(message)s',
@@ -19,6 +17,49 @@ logging.basicConfig(
     ]
 )
 
+main = Blueprint('main', __name__)
+
+@main.route('/messages', methods=['GET', 'POST'])
+@login_required
+def messages():
+    form = MessageForm()
+    if form.validate_on_submit():
+        content = form.content.data
+        receiver_username = request.form.get("receiver")
+
+        receiver = User.query.filter_by(username=receiver_username).first()
+        if not receiver:
+            flash("User not found!", "danger")
+            return redirect(url_for("main.messages"))
+
+        message = Message(sender_id=current_user.id, receiver_id=receiver.id, content=content, timestamp=datetime.utcnow())
+        db.session.add(message)
+        db.session.commit()
+        return redirect(url_for("main.messages"))
+
+    messages = Message.query.filter((Message.sender_id == current_user.id) | (Message.receiver_id == current_user.id)).order_by(Message.timestamp.desc()).all()
+    return render_template("messages.html", form=form, messages=messages)
+
+@main.route('/delete_message/<int:message_id>', methods=['DELETE'])
+@login_required
+def delete_message(message_id):
+    message = Message.query.get_or_404(message_id)
+    if message.sender_id != current_user.id:
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 403
+
+    db.session.delete(message)
+    db.session.commit()
+    return jsonify({'success': True, 'message': 'Message deleted successfully'})
+
+@main.route('/search_contacts')
+@login_required
+def search_contacts():
+    query = request.args.get("query", "").strip()
+    if not query:
+        return jsonify([])
+
+    contacts = User.query.filter((User.username.ilike(f"%{query}%")) | (User.email.ilike(f"%{query}%"))).limit(5).all()
+    return jsonify([{ "id": user.id, "username": user.username, "email": user.email} for user in contacts])
 # Blueprint definition
 main = Blueprint('main', __name__)
 

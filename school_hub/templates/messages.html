@@ -5,103 +5,211 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Messages</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        /* General layout and spacing */
+        .container-fluid {
+            max-width: 100%;
+            padding-left: 15px;
+            padding-right: 15px;
+        }
+        .card-body {
+            padding: 2rem;
+        }
+
+        /* Message bubbles styling */
+        .message {
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: flex-start;
+        }
+
+        .message.sent {
+            justify-content: flex-end;
+        }
+
+        .message-bubble {
+            max-width: 75%;
+            padding: 10px;
+            background-color: #f1f1f1;
+            border-radius: 12px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            word-wrap: break-word;
+        }
+
+        .message.sent .message-bubble {
+            background-color: #007bff;
+            color: white;
+            border-radius: 12px 12px 0 12px;
+        }
+
+        .message.received .message-bubble {
+            background-color: #e9ecef;
+            border-radius: 0 12px 12px 12px;
+        }
+
+        .message .btn {
+            margin-top: 5px;
+        }
+
+        /* Scroll styling */
+        #messagesList {
+            height: 350px;
+            overflow-y: auto;
+            margin-bottom: 15px;
+        }
+
+        /* Input styling */
+        .form-control {
+            border-radius: 12px;
+        }
+
+        /* Contact search styles */
+        #contactResults {
+            max-height: 200px;
+            overflow-y: scroll;
+        }
+
+        /* Change cursor when hovering over contact list items */
+        #contactResults .list-group-item {
+            cursor: pointer; /* Changes cursor to a hand when hovering */
+        }
+    </style>
 </head>
 <body>
     <!-- Navbar -->
     <nav class="navbar navbar-expand-lg navbar-light bg-light">
         <div class="container-fluid">
-            <a class="navbar-brand" href="#">Dashboard</a>
+            <!-- Dynamically change navbar brand based on user role -->
+            <a class="navbar-brand" href="#">
+                {% if current_user.role == 'teacher' %}
+                    Teacher Dashboard
+                {% elif current_user.role == 'student' %}
+                    Student Dashboard
+                {% elif current_user.role == 'parent' %}
+                    Parent Dashboard
+                {% elif current_user.role == 'employee' %}
+                    Employee Dashboard
+                {% else %}
+                    User Dashboard
+                {% endif %}
+            </a>
+            
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
                     <li class="nav-item">
-                        <a class="nav-link" href="#">Profile</a>
+                        <a class="nav-link" href="{{ url_for('main.profile') }}">Profile</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="#">Messages</a>
+                        <a class="nav-link" href="{{ url_for('main.messages') }}">Messages</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="#">Notifications</a>
+                        <a class="nav-link" href="/teacher/notifications">Notifications</a>
                     </li>
                 </ul>
             </div>
         </div>
     </nav>
 
-    <!-- Main Content -->
-    <div class="container mt-4">
-        <h2>Messages</h2>
-
-        <!-- Contact Search -->
-        <div class="mb-3">
-            <input type="text" id="contact-search" class="form-control" placeholder="Search by username or email">
-            <div id="contact-results" class="list-group mt-2"></div>
-        </div>
-
-        <!-- Message Form -->
-        <form id="message-form" method="POST">
-            {{ form.hidden_tag() }}
-            <div class="input-group">
-                {{ form.content(class="form-control", placeholder="Type your message...") }}
-                <button type="submit" class="btn btn-primary">Send</button>
+    <div class="container-fluid mt-4">
+        <div class="row">
+            <div class="col-md-4">
+                <!-- Search Contacts -->
+                <h4>Search Contacts</h4>
+                <input type="text" id="contactSearch" class="form-control" placeholder="Search by username or email">
+                <ul id="contactResults" class="list-group mt-2"></ul>
             </div>
-        </form>
+            <div class="col-md-8">
+                <!-- Messages Section -->
+                <div class="card shadow-sm">
+                    <div class="card-body p-4">
+                        <h2>Messages</h2>
 
-        <!-- Messages List -->
-        <h3 class="mt-4">Your Messages</h3>
-        <div id="messages-container">
-            {% for message in messages %}
-                <div class="message-item border rounded p-2 my-2 position-relative">
-                    <p><strong>{{ message.sender.username }}</strong> → <strong>{{ message.receiver.username }}</strong>: {{ message.content }}</p>
-                    <small class="text-muted">{{ message.timestamp }}</small>
-                    {% if message.sender.id == current_user.id %}
-                        <button class="btn btn-danger btn-sm delete-message" data-message-id="{{ message.id }}">Delete</button>
-                    {% endif %}
+                        <!-- Display Messages -->
+                        <div id="messagesList" class="mb-4" style="height: 400px; overflow-y: scroll;">
+                            {% for message in messages %}
+                                <div class="message {{ 'sent' if message.sender.id == current_user.id else 'received' }}">
+                                    <div class="message-bubble">
+                                        <strong>{{ message.sender.username }}:</strong>
+                                        <p>{{ message.content }}</p>
+                                        <small class="text-muted">{{ message.timestamp }}</small>
+                                        {% if message.sender.id == current_user.id %}
+                                            <button class="btn btn-danger btn-sm float-right mt-1" onclick="deleteMessage('{{ message.id }}')">Delete</button>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+
+                        <!-- Message Input Form -->
+                        <form method="POST" action="{{ url_for('main.messages') }}">
+                            {{ form.hidden_tag() }}
+                            <div class="form-group">
+                                <label for="receiver">Recipient</label>
+                                <input type="text" class="form-control" id="receiver" name="receiver" placeholder="Enter recipient's username" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="content">Message</label>
+                                <textarea class="form-control" id="content" name="content" rows="3" placeholder="Enter your message" required></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-primary mt-2 w-100">Send Message</button>
+                        </form>
+                    </div>
                 </div>
-            {% endfor %}
+            </div>
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- JavaScript for search and delete actions -->
     <script>
         // Search for contacts
-        document.getElementById("contact-search").addEventListener("input", function() {
+        document.getElementById("contactSearch").addEventListener("input", function() {
             let query = this.value;
-            if (query.length > 1) {
+            if (query.length > 0) {
                 fetch(`/search_contacts?query=${query}`)
                     .then(response => response.json())
                     .then(data => {
-                        let resultsDiv = document.getElementById("contact-results");
-                        resultsDiv.innerHTML = "";
-                        data.forEach(user => {
-                            let div = document.createElement("div");
-                            div.className = "list-group-item list-group-item-action";
-                            div.textContent = user.username + " (" + user.email + ")";
-                            div.addEventListener("click", function() {
-                                document.getElementById("contact-search").value = user.username;
-                                resultsDiv.innerHTML = "";
+                        let results = document.getElementById("contactResults");
+                        results.innerHTML = "";
+                        data.forEach(contact => {
+                            let li = document.createElement("li");
+                            li.classList.add("list-group-item");
+                            li.textContent = contact.username + " (" + contact.email + ")";
+                            li.dataset.username = contact.username;  // Store username for later use
+                            li.addEventListener("click", function() {
+                                document.getElementById("receiver").value = contact.username;
+                                document.getElementById("contactResults").innerHTML = "";  // Clear results
                             });
-                            resultsDiv.appendChild(div);
+                            results.appendChild(li);
                         });
                     });
+            } else {
+                document.getElementById("contactResults").innerHTML = "";
             }
         });
 
-        // Delete a message
-        document.querySelectorAll(".delete-message").forEach(button => {
-            button.addEventListener("click", function() {
-                let messageId = this.getAttribute("data-message-id");
-                fetch(`/delete_message/${messageId}`, { method: "DELETE" })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            this.closest(".message-item").remove();
-                        }
-                    });
-            });
-        });
+        // Delete message
+        function deleteMessage(messageId) {
+            fetch(`/delete_message/${messageId}`, {
+                method: "DELETE",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": "{{ csrf_token() }}"
+                }
+            }).then(response => response.json())
+              .then(data => {
+                  if (data.success) {
+                      alert("Message deleted!");
+                      location.reload();
+                  } else {
+                      alert(data.message);
+                  }
+              });
+        }
     </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
