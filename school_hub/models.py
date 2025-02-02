@@ -207,3 +207,13 @@ class Message(db.Model):
 
     sender = db.relationship('User', foreign_keys=[sender_id], backref='sent_messages')
     receiver = db.relationship('User', foreign_keys=[receiver_id], backref='received_messages')
+
+class ForumMembership(db.Model):
+    __tablename__ = 'forum_membership'
+    id = db.Column(db.Integer, primary_key=True)
+    class_code_id = db.Column(db.Integer, db.ForeignKey('class_code.id'))
+    student_id = db.Column(db.Integer, db.ForeignKey('users.id'))  # Make sure 'users.id' is correct
+    joined_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    class_code = db.relationship('ClassCode', backref='memberships')
+    student = db.relationship('User', backref='forum_memberships')

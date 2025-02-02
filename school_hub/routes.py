@@ -17,6 +17,9 @@ logging.basicConfig(
     ]
 )
 
+# Temporary storage (Replace with a database like SQLite or PostgreSQL)
+messages_db = []
+
 main = Blueprint('main', __name__)
 
 @main.route('/messages', methods=['GET', 'POST'])
@@ -175,22 +178,9 @@ def save_class_code():
 
 
 @main.route('/get_class_codes', methods=['GET'])
-@login_required
 def get_class_codes():
-    try:
-        # Fetch all class codes created by the current user
-        class_codes = ClassCode.query.filter_by(creator_id=current_user.id).all()
-        
-        # Serialize the data into a JSON-friendly format
-        class_codes_list = [
-            {'id': code.id, 'code': code.code, 'description': code.description} 
-            for code in class_codes
-        ]
-        return jsonify(class_codes_list), 200
-    except Exception as e:
-        logging.error(f"Error fetching class codes: {e}")
-        return jsonify({'message': 'Error fetching class codes'}), 500
-
+    codes = ClassCode.query.all()
+    return jsonify([{"code": code.code, "description": code.description} for code in codes])
 
 @main.route('/join_class', methods=['POST'])
 @login_required
@@ -427,7 +417,34 @@ def profile():
         return redirect(url_for('main.profile'))
 
     return render_template('profile.html', user=user)
+
+@main.route('/forum/<class_code>')
+def forum(class_code):
+    return render_template('forum.html', class_code=class_code)
     
+
+@main.route('/get_messages/<class_code>')
+def get_messages(class_code):
+    # Filter messages by class code
+    forum_messages = [msg for msg in messages_db if msg["class_code"] == class_code]
+    return jsonify(forum_messages)
+
+@main.route('/post_message', methods=['POST'])
+def post_message():
+    data = request.json
+    if "class_code" not in data or "text" not in data:
+        return jsonify({"error": "Missing class_code or text"}), 400
+
+    new_message = {
+        "class_code": data["class_code"],
+        "user": "Anonymous",  # Replace with Flask-Login username if authentication is added
+        "text": data["text"],
+        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    }
+
+    messages_db.append(new_message)
+    return jsonify({"success": True, "message": "Message posted!"})
+
 # Logout route
 @main.route('/logout')
 @login_required

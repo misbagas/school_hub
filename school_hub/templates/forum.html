@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Forum - {{ class_code }}</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css">
+</head>
+<body>
+    <div class="container mt-5">
+        <h1>Discussion Forum for Class Code: {{ class_code }}</h1>
+        <p>Welcome to the forum for class <strong>{{ class_code }}</strong>.</p>
+
+        <!-- Message Form -->
+        <div class="mt-4">
+            <h3>Post a Message</h3>
+            <form id="messageForm">
+                <div class="form-group">
+                    <textarea id="messageInput" class="form-control" placeholder="Type your message..." required></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary mt-2">Post Message</button>
+            </form>
+        </div>
+
+        <!-- Forum Messages Section -->
+        <div class="mt-4">
+            <h3>Forum Messages</h3>
+            <ul id="messagesList" class="list-group">
+                <!-- Messages will be dynamically inserted here -->
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        const classCode = "{{ class_code }}";  // Pass class code from Flask to JS
+
+        // Function to fetch messages for this class
+        async function loadMessages() {
+            try {
+                const response = await fetch(`/get_messages/${classCode}`);
+                const messages = await response.json();
+
+                const messagesList = document.getElementById('messagesList');
+                messagesList.innerHTML = ''; // Clear previous messages
+
+                messages.forEach(msg => {
+                    const listItem = document.createElement('li');
+                    listItem.className = 'list-group-item';
+                    listItem.innerHTML = `<strong>${msg.user}:</strong> ${msg.text} <br><small>${msg.timestamp}</small>`;
+                    messagesList.appendChild(listItem);
+                });
+            } catch (error) {
+                console.error('Error loading messages:', error);
+            }
+        }
+
+        // Handle new message submission
+        document.getElementById('messageForm').addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const messageText = document.getElementById('messageInput').value.trim();
+
+            if (!messageText) return alert("Message cannot be empty!");
+
+            try {
+                const response = await fetch('/post_message', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ class_code: classCode, text: messageText })
+                });
+
+                const result = await response.json();
+                if (response.ok) {
+                    document.getElementById('messageInput').value = ''; // Clear input
+                    loadMessages(); // Refresh message list
+                } else {
+                    alert(result.error || "Failed to post message.");
+                }
+            } catch (error) {
+                console.error("Error posting message:", error);
+            }
+        });
+
+        // Load messages when page loads
+        loadMessages();
+    </script>
+</body>
+</html>

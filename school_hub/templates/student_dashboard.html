@@ -51,42 +51,63 @@
             <input type="text" id="classCode" class="form-control" placeholder="Enter class code">
             <button id="joinClassBtn" class="btn btn-primary mt-2">Join Class</button>
         </div>
-
-        <!-- Section to display the class code entered -->
+    
+        <!-- Section to display entered class codes -->
         <div id="classCodeSection" style="margin-top: 20px;">
-            <h3>Entered Class Code:</h3>
-            <p id="displayClassCode"></p>
+            <h3>Entered Class Codes:</h3>
+            <ul id="enteredCodesList" class="list-group"></ul>
         </div>
     </div>
-
+    
     <script>
-        document.getElementById('joinClassBtn').addEventListener('click', () => {
-            const classCode = document.getElementById('classCode').value;
-
-            // Display the entered class code in the section
-            document.getElementById('displayClassCode').textContent = classCode;
-
-            fetch('/join_class', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ code: classCode })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    alert('Class joined successfully!');
-                } else {
-                    alert(`Error: ${data.message}`);
+        document.getElementById('joinClassBtn').addEventListener('click', async () => {
+            const classCode = document.getElementById('classCode').value.trim();
+    
+            if (!classCode) {
+                alert('Please enter a class code.');
+                return;
+            }
+    
+            try {
+                // Fetch the list of valid class codes from the backend
+                const response = await fetch('/get_class_codes', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+    
+                if (!response.ok) {
+                    alert('Failed to fetch class codes.');
+                    return;
                 }
-            })
-            .catch((error) => {
+    
+                const classCodes = await response.json();
+    
+                // Check if the entered class code exists in the list
+                const validCode = classCodes.some(code => code.code === classCode);
+    
+                if (!validCode) {
+                    alert('Invalid class code. Please enter a valid one.');
+                    return;
+                }
+    
+                // Append the entered class code to the list
+                const listItem = document.createElement('li');
+                listItem.className = 'list-group-item';
+                listItem.innerHTML = `<a href="/forum/${classCode}" target="_blank">${classCode}</a>`;
+    
+                document.getElementById('enteredCodesList').appendChild(listItem);
+    
+    
+            } catch (error) {
                 console.error('Error:', error);
-                alert('An error occurred while trying to join the class.');
-            });
+                alert('An error occurred while verifying the class code.');
+            }
         });
     </script>
+    
+    
 
     <!-- Add Bootstrap JS and dependencies for navbar toggle functionality -->
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
