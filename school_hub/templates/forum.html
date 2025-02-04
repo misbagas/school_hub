@@ -3,31 +3,60 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Forum - {{ class_code }}</title>
+    <title>Discussion Forum - {{ class_code }}</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css">
+    <style>
+        .message-container {
+            border-radius: 10px;
+            background-color: #f8f9fa;
+            padding: 15px;
+            margin-bottom: 10px;
+        }
+        .message-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .message-footer small {
+            font-size: 0.8rem;
+            color: #6c757d;
+        }
+        .delete-btn {
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        .delete-btn:hover {
+            background-color: #c82333;
+        }
+    </style>
 </head>
 <body>
     <div class="container mt-5">
-        <h1>Discussion Forum for Class Code: {{ class_code }}</h1>
-        <p>Welcome to the forum for class <strong>{{ class_code }}</strong>.</p>
+        <h1 class="display-4">Discussion Forum for Class Code: {{ class_code }}</h1>
+        <p>Welcome to the forum for class <strong>{{ class_code }}</strong>. Share your thoughts and ask questions!</p>
 
         <!-- Message Form -->
-        <div class="mt-4">
-            <h3>Post a Message</h3>
-            <form id="messageForm">
-                <div class="form-group">
-                    <textarea id="messageInput" class="form-control" placeholder="Type your message..." required></textarea>
+        <div class="message-form card p-4 mt-4 shadow-sm">
+            <h4 class="card-title">Post a Message</h4>
+            <form id="messageForm" enctype="multipart/form-data">
+                <div class="form-group mb-3">
+                    <textarea id="messageInput" class="form-control" placeholder="Type your message..." required rows="4"></textarea>
                 </div>
-                <button type="submit" class="btn btn-primary mt-2">Post Message</button>
+                <div class="mb-3">
+                    <input type="file" id="fileInput" class="form-control" name="file" accept="image/*">
+                </div>
+                <button type="submit" class="btn btn-primary">Post Message</button>
             </form>
         </div>
 
         <!-- Forum Messages Section -->
-        <div class="mt-4">
-            <h3>Forum Messages</h3>
-            <ul id="messagesList" class="list-group">
+        <div class="mt-5">
+            <h4>Forum Messages</h4>
+            <div id="messagesList">
                 <!-- Messages will be dynamically inserted here -->
-            </ul>
+            </div>
         </div>
     </div>
 
@@ -36,23 +65,38 @@
 
         // Function to fetch messages for this class
         async function loadMessages() {
-            try {
-                const response = await fetch(`/get_messages/${classCode}`);
-                const messages = await response.json();
+    try {
+        const response = await fetch(`/get_messages/${classCode}`);
+        const messages = await response.json();
+        const messagesList = document.getElementById('messagesList');
+        messagesList.innerHTML = '';
 
-                const messagesList = document.getElementById('messagesList');
-                messagesList.innerHTML = ''; // Clear previous messages
+        messages.forEach(msg => {
+            console.log(msg);  // Debugging: Check if `msg.id` exists
 
-                messages.forEach(msg => {
-                    const listItem = document.createElement('li');
-                    listItem.className = 'list-group-item';
-                    listItem.innerHTML = `<strong>${msg.user}:</strong> ${msg.text} <br><small>${msg.timestamp}</small>`;
-                    messagesList.appendChild(listItem);
-                });
-            } catch (error) {
-                console.error('Error loading messages:', error);
+            if (!msg.id) {
+                console.error("Message ID is missing!", msg);
+                return;
             }
-        }
+
+            const messageDiv = document.createElement('div');
+            messageDiv.classList.add('message-container');
+            messageDiv.innerHTML = `
+                <strong>${msg.user}</strong> <small>${msg.timestamp}</small>
+                <p>${msg.text}</p>
+                ${msg.file_url ? `<img src="${msg.file_url}" class="img-fluid mt-3" alt="Attached image">` : ''}
+                <div class="message-footer mt-3">
+                    <small>${msg.timestamp}</small>
+                    <button class="delete-btn btn btn-sm" onclick="deleteMessage(${msg.id})">Delete</button>
+                </div>
+            `;
+            messagesList.appendChild(messageDiv);
+        });
+    } catch (error) {
+        console.error('Error loading messages:', error);
+    }
+}
+
 
         // Handle new message submission
         document.getElementById('messageForm').addEventListener('submit', async (event) => {
@@ -62,26 +106,55 @@
             if (!messageText) return alert("Message cannot be empty!");
 
             try {
+                const formData = new FormData();
+                formData.append('class_code', classCode);
+                formData.append('text', messageText);
+                const fileInput = document.getElementById('fileInput');
+                if (fileInput.files.length > 0) {
+                    formData.append('file', fileInput.files[0]);
+                }
+
                 const response = await fetch('/post_message', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ class_code: classCode, text: messageText })
+                    body: formData
                 });
-
-                const result = await response.json();
-                if (response.ok) {
-                    document.getElementById('messageInput').value = ''; // Clear input
-                    loadMessages(); // Refresh message list
-                } else {
-                    alert(result.error || "Failed to post message.");
+                const data = await response.json();
+                if (data.success) {
+                    loadMessages();  // Reload messages after posting
                 }
             } catch (error) {
-                console.error("Error posting message:", error);
+                console.error('Error posting message:', error);
             }
         });
 
-        // Load messages when page loads
+        // Function to delete a message
+        async function deleteMessage(messageId) {
+    console.log("Deleting message ID:", messageId);  // Debugging
+
+    if (!messageId) {
+        console.error("Message ID is undefined!");
+        return;
+    }
+
+    try {
+        const response = await fetch(`/delete_message/${messageId}`, {
+            method: 'DELETE'
+        });
+        const data = await response.json();
+        if (data.success) {
+            loadMessages();  // Reload messages after deletion
+        } else {
+            alert('Failed to delete message.');
+        }
+    } catch (error) {
+        console.error('Error deleting message:', error);
+    }
+}
+
+
+        // Load messages when the page loads
         loadMessages();
     </script>
+
 </body>
 </html>

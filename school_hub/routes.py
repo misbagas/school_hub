@@ -312,17 +312,14 @@ def get_joined_students():
     if current_user.role != 'teacher':
         return jsonify({'success': False, 'message': 'Unauthorized'}), 403
 
-    # Get class_code from the query string
     class_code = request.args.get('class_code')
     if not class_code:
         return jsonify({'success': False, 'message': 'Class code is required'}), 400
 
-    # Fetch the class using the provided class code
     class_code_entry = ClassCode.query.filter_by(code=class_code).first()
     if not class_code_entry:
         return jsonify({'success': False, 'message': 'Class code not found'}), 404
 
-    # Get all students who joined using this class code
     joined_students = StudentClassCode.query.filter_by(class_code_id=class_code_entry.id).all()
     students_data = []
 
@@ -335,7 +332,7 @@ def get_joined_students():
                 'email': student.email
             })
 
-    return jsonify({'success': True, 'students': students_data})
+    return jsonify({'success': True, 'students': students_data, 'class_code': class_code_entry.code})
 
 
 # In routes.py (or where the function is)
@@ -388,12 +385,6 @@ def search_contacts():
     contacts = User.query.filter((User.username.ilike(f"%{query}%")) | (User.email.ilike(f"%{query}%"))).limit(5).all()
     return jsonify([{"id": user.id, "username": user.username, "email": user.email} for user in contacts])
 
-# Allowed file extensions
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
-
-# Check if the file has a valid extension
-def allowed_file(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 @main.route('/profile', methods=['GET', 'POST'])
 def profile():
@@ -423,27 +414,85 @@ def forum(class_code):
     return render_template('forum.html', class_code=class_code)
     
 
-@main.route('/get_messages/<class_code>')
+@main.route('/get_messages/<string:class_code>', methods=['GET'])
+@login_required
 def get_messages(class_code):
-    # Filter messages by class code
-    forum_messages = [msg for msg in messages_db if msg["class_code"] == class_code]
-    return jsonify(forum_messages)
+    class_code_obj = ClassCode.query.filter_by(code=class_code).first()
+    if not class_code_obj:
+        return jsonify({"error": "Invalid class code"}), 400
+
+    messages = Message.query.filter_by(class_code_id=class_code_obj.id).order_by(Message.timestamp.desc()).all()
+    
+    return jsonify([
+        {
+            'id': message.id,
+            'user': message.sender.username,
+            'text': message.content,
+            'timestamp': message.timestamp.strftime("%Y-%m-%d %H:%M:%S"),
+            'file_url': message.file_url if message.file_url else None
+        }
+        for message in messages
+    ])
+
+
+# Allowed file extensions
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
+
+# Check if the file has a valid extension
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 @main.route('/post_message', methods=['POST'])
 def post_message():
-    data = request.json
+    if request.content_type == 'application/json':
+        data = request.get_json()
+    elif request.content_type.startswith('multipart/form-data'):
+        data = request.form  # Handle form data
+
     if "class_code" not in data or "text" not in data:
         return jsonify({"error": "Missing class_code or text"}), 400
 
-    new_message = {
-        "class_code": data["class_code"],
-        "user": "Anonymous",  # Replace with Flask-Login username if authentication is added
-        "text": data["text"],
-        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    }
+    # Ensure receiver_id is provided, or set it to sender's id if not
+    receiver_id = data.get("receiver_id", current_user.id)  # Default to current_user.id if not provided
+    if not receiver_id:
+        return jsonify({"error": "Receiver ID is required"}), 400
 
-    messages_db.append(new_message)
-    return jsonify({"success": True, "message": "Message posted!"})
+    # Handle file upload
+    file_url = None
+    if 'file' in request.files:
+        file = request.files['file']
+        if file and allowed_file(file.filename):
+            filename = secure_filename(file.filename)
+            file_path = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
+            file.save(file_path)
+            file_url = url_for('uploaded_file', filename=filename)
+
+    # Retrieve class_code from ClassCode table
+    class_code_obj = ClassCode.query.filter_by(code=data["class_code"]).first()
+    if not class_code_obj:
+        return jsonify({"error": "Invalid class code"}), 400
+
+    # Create and add new message
+    new_message = Message(
+        sender_id=current_user.id,
+        receiver_id=receiver_id,  # Use provided or default receiver_id
+        content=data["text"],
+        class_code_id=class_code_obj.id,
+        file_url=file_url
+    )
+
+    try:
+        db.session.add(new_message)
+        db.session.commit()
+        return jsonify({"success": True, "message": "Message posted!"})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
+
+
+@main.route('/uploads/<filename>')
+def uploaded_file(filename):
+    return send_from_directory(current_app.config['UPLOAD_FOLDER'], filename)
 
 # Logout route
 @main.route('/logout')

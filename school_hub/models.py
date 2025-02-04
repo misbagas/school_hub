@@ -202,11 +202,14 @@ class Message(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     sender_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     receiver_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    class_code_id = db.Column(db.Integer, db.ForeignKey('class_code.id'), nullable=True)
     content = db.Column(db.Text, nullable=False)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    file_url = db.Column(db.String(255), nullable=True)  # Add this line to store the file URL
 
     sender = db.relationship('User', foreign_keys=[sender_id], backref='sent_messages')
     receiver = db.relationship('User', foreign_keys=[receiver_id], backref='received_messages')
+    class_code = db.relationship('ClassCode', backref='messages')
 
 class ForumMembership(db.Model):
     __tablename__ = 'forum_membership'

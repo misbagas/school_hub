@@ -61,35 +61,40 @@
     </div>
 
     <script>
-        document.getElementById('viewJoinedBtn').addEventListener('click', () => {
-            const classCode = document.getElementById('classCode').value;
+document.getElementById('viewJoinedBtn').addEventListener('click', () => {
+    const classCode = document.getElementById('classCode').value;
 
-            fetch(`/get_joined_students?class_code=${classCode}`, {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                const joinedStudentsList = document.getElementById('joinedStudentsList');
-                joinedStudentsList.innerHTML = ''; // Clear any previous list
+    fetch(`/get_joined_students?class_code=${classCode}`, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        const joinedStudentsList = document.getElementById('joinedStudentsList');
+        joinedStudentsList.innerHTML = ''; // Clear previous list
 
-                if (data.success) {
-                    data.students.forEach(student => {
-                        const li = document.createElement('li');
-                        li.textContent = `${student.username} (${student.email})`;
-                        joinedStudentsList.appendChild(li);
-                    });
-                } else {
-                    alert(`Error: ${data.message}`);
-                }
-            })
-            .catch(error => {
-                console.error('Error fetching students:', error);
-                alert('An error occurred while fetching the students.');
+        if (data.success) {
+            data.students.forEach(student => {
+                const li = document.createElement('li');
+
+                // Display student's name, email, and make class code a clickable link to forum.html
+                li.innerHTML = `${student.username} (${student.email}) - 
+                <a href="/forum/${data.class_code}" class="class-code-link">${data.class_code}</a>`;
+
+                joinedStudentsList.appendChild(li);
             });
-        });
+        } else {
+            alert(`Error: ${data.message}`);
+        }
+    })
+    .catch(error => {
+        console.error('Error fetching students:', error);
+        alert('An error occurred while fetching the students.');
+    });
+});
+
     </script>
 
     <!-- Bootstrap JS -->
