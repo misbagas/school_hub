@@ -1,4 +1,3 @@
-<!-- teacher_dashboard.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -6,26 +5,29 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Teacher Dashboard</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+    .assignment-card {
+        background: #f8f9fa;
+        padding: 15px;
+        margin: 10px 0;
+        border-radius: 5px;
+        border-left: 5px solid #007bff;
+    }
+    .assignment-card h3 {
+        margin: 0;
+        color: #007bff;
+    }
+    .assignment-card p {
+        margin: 5px 0;
+        color: #555;
+    }
+    </style>
 </head>
 <body>
-    <!-- Navbar Section -->
-     <!-- Navbar -->
-     <nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
         <div class="container-fluid">
-            <!-- Dynamically change navbar brand based on user role -->
-            <a class="navbar-brand" href="#">
-                {% if user.role == 'teacher' %}
-                    Teacher Dashboard
-                {% elif user.role == 'student' %}
-                    Student Dashboard
-                {% elif user.role == 'parent' %}
-                    Parent Dashboard
-                {% elif user.role == 'employee' %}
-                    Employee Dashboard
-                {% else %}
-                    User Dashboard
-                {% endif %}
-            </a>
+            <a class="navbar-brand" href="#">Teacher Dashboard</a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
@@ -45,59 +47,183 @@
         </div>
     </nav>
 
-    <!-- Teacher Dashboard Content -->
+    <!-- Main Content -->
     <div class="container mt-4">
-        <h2>View Joined Students</h2>
-        <div class="mb-3">
-            <label for="classCode" class="form-label">Enter Class Code</label>
-            <input type="text" class="form-control" id="classCode" placeholder="Enter class code" required>
-            <button id="viewJoinedBtn" class="btn btn-primary mt-2">View Joined Students</button>
+        <!-- View Joined Students -->
+        <div class="mb-4">
+            <h2>View Joined Students</h2>
+            <div class="input-group">
+                <input type="text" id="classCode" class="form-control" placeholder="Enter class code">
+                <button id="viewJoinedBtn" class="btn btn-primary">View Joined Students</button>
+            </div>
+            <ul id="joinedStudentsList" class="list-group mt-3"></ul>
         </div>
 
-        <h3>Students Who Have Joined</h3>
-        <ul id="joinedStudentsList">
-            <!-- This will be populated dynamically -->
-        </ul>
-    </div>
+        <div id="assignmentForm" class="mb-4">
+            <h2>Create Assignment</h2>
+            <div class="mb-3">
+                <label for="classCodeSelect" class="form-label">Class Code:</label>
+                <select id="classCodeSelect" class="form-control">
+                    <option value="">Select a class</option>
+                </select>
+            </div>
+            <div class="mb-3">
+                <label for="studentSelect" class="form-label">Select Student:</label>
+                <select id="studentSelect" class="form-control">
+                    <option value="">Select a student</option>
+                </select>
+            </div>
+            <div class="mb-3">
+                <label for="assignmentTitle" class="form-label">Title:</label>
+                <input type="text" id="assignmentTitle" class="form-control" placeholder="Assignment Title">
+            </div>
+            <div class="mb-3">
+                <label for="assignmentDescription" class="form-label">Description:</label>
+                <textarea id="assignmentDescription" class="form-control" placeholder="Assignment Description"></textarea>
+            </div>
+            <div class="mb-3">
+                <label for="dueDate" class="form-label">Due Date:</label>
+                <input type="datetime-local" id="dueDate" class="form-control">
+            </div>
+            <button id="sendAssignment" class="btn btn-primary">Send Assignment</button>
+        </div>
 
+        <div class="container mt-4">
+            <h2>Assignments Created</h2>
+            <div id="assignmentList">
+                {% for assignment in assignments %}
+                    <div class="assignment-card">
+                        <h3>{{ assignment.title }}</h3>
+                        <p><strong>Class Code:</strong> {{ assignment.class_code }}</p>
+                        <p><strong>Teacher:</strong> {{ assignment.teacher_username }}</p>
+                        <p><strong>Description:</strong> {{ assignment.description }}</p>
+                        <p><strong>Due Date:</strong> {{ assignment.due_date }}</p>
+                    </div>
+                {% endfor %}
+            </div>
+            {% if assignments|length == 0 %}
+                <p>No assignments created yet.</p>
+            {% endif %}
+        </div>
+        
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
-document.getElementById('viewJoinedBtn').addEventListener('click', () => {
-    const classCode = document.getElementById('classCode').value;
+ $(document).ready(function() {
+        fetchAssignments();
 
-    fetch(`/get_joined_students?class_code=${classCode}`, {
-        method: 'GET',
-        headers: {
-            'Content-Type': 'application/json',
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        const joinedStudentsList = document.getElementById('joinedStudentsList');
-        joinedStudentsList.innerHTML = ''; // Clear previous list
+        function fetchAssignments() {
+            $.ajax({
+                url: '/get_teacher_assignments',
+                method: 'GET',
+                success: function(response) {
+                    const assignmentList = $('#assignmentList');
+                    assignmentList.empty();
 
-        if (data.success) {
-            data.students.forEach(student => {
-                const li = document.createElement('li');
-
-                // Display student's name, email, and make class code a clickable link to forum.html
-                li.innerHTML = `${student.username} (${student.email}) - 
-                <a href="/forum/${data.class_code}" class="class-code-link">${data.class_code}</a>`;
-
-                joinedStudentsList.appendChild(li);
+                    if (response.success && response.assignments.length > 0) {
+                        response.assignments.forEach(assignment => {
+                            assignmentList.append(`
+                                <div class="assignment-card border p-3 mb-3">
+                                    <h3>${assignment.name}</h3>
+                                    <p><strong>Class Code:</strong> ${assignment.class_code}</p>
+                                    <p><strong>Teacher:</strong> ${assignment.teacher_username}</p>
+                                    <p><strong>Description:</strong> ${assignment.description}</p>
+                                    <p class="text-danger"><strong>Due Date:</strong> ${assignment.due_date}</p>
+                                </div>
+                            `);
+                        });
+                    } else {
+                        assignmentList.append('<p>No assignments found.</p>');
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('Error fetching assignments:', error);
+                }
             });
-        } else {
-            alert(`Error: ${data.message}`);
         }
-    })
-    .catch(error => {
-        console.error('Error fetching students:', error);
-        alert('An error occurred while fetching the students.');
     });
-});
 
+ $(document).ready(function() {
+        // Fetch class codes for the teacher
+        $.ajax({
+            url: '/get_class_codes',
+            method: 'GET',
+            success: function(data) {
+                const classCodeSelect = $('#classCodeSelect');
+                classCodeSelect.empty();
+                classCodeSelect.append('<option value="">Select a class</option>');
+                data.forEach(code => {
+                    classCodeSelect.append(`<option value="${code.code}">${code.code} - ${code.description}</option>`);
+                });
+            },
+            error: function(xhr, status, error) {
+                console.error('Error fetching class codes:', error);
+                alert('Failed to fetch class codes. Please try again.');
+            }
+        });
+
+        // Fetch students when class code is selected
+        $('#classCodeSelect').change(function() {
+            const selectedClassCode = $(this).val();
+            const studentSelect = $('#studentSelect');
+            studentSelect.empty();
+            studentSelect.append('<option value="">Select a student</option>');
+
+            if (!selectedClassCode) return;
+
+            $.ajax({
+                url: `/get_joined_students?class_code=${selectedClassCode}`,
+                method: 'GET',
+                success: function(response) {
+                    if (response.success) {
+                        response.students.forEach(student => {
+                            studentSelect.append(`<option value="${student.id}">${student.username}</option>`);
+                        });
+                    } else {
+                        alert(response.message);
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('Error fetching students:', error);
+                    alert('Failed to fetch students.');
+                }
+            });
+        });
+
+        // Send Assignment Button Click
+        $('#sendAssignment').click(() => {
+            const classCode = $('#classCodeSelect').val();
+            const studentId = $('#studentSelect').val();
+            const title = $('#assignmentTitle').val();
+            const description = $('#assignmentDescription').val();
+            const dueDate = $('#dueDate').val();
+
+            if (!classCode || !studentId || !title || !description || !dueDate) {
+                alert('Please fill out all fields.');
+                return;
+            }
+
+            $.ajax({
+                url: '/create_assignment',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    class_code: classCode,
+                    student_id: studentId,
+                    title: title,
+                    description: description,
+                    due_date: dueDate
+                }),
+                success: function(response) {
+                    alert(response.message);
+                },
+                error: function(xhr, status, error) {
+                    alert('Error sending assignment: ' + error);
+                }
+            });
+        });
+    });
+    
     </script>
-
-    <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

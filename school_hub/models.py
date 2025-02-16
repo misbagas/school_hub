@@ -21,7 +21,8 @@ class User(UserMixin, db.Model):
     class_info = db.relationship('Class', back_populates='users')
     assignments = db.relationship('AssignmentReminder', back_populates='user', foreign_keys='AssignmentReminder.user_id')
     class_codes = db.relationship('ClassCode', back_populates='creator')
-    class_joins = db.relationship('ClassJoin', back_populates='student')
+    class_joins = db.relationship('ClassJoin', foreign_keys='ClassJoin.student_id', back_populates='student')
+    teacher_classes = db.relationship('ClassJoin', foreign_keys='ClassJoin.teacher_id', back_populates='teacher')
     profile_picture = db.Column(db.String(120), nullable=True)  # Store filename of profile picture
     date_joined = db.Column(db.DateTime, default=datetime.utcnow)  # <-- date_joined field
     # Methods
@@ -55,8 +56,6 @@ class Class(db.Model):
     students = db.relationship('Student', back_populates='class_info')
     class_joins = db.relationship('ClassJoin', back_populates='class_info')
 
-
-# Assignment Model
 class Assignment(db.Model):
     __tablename__ = 'assignments'
 
@@ -64,11 +63,14 @@ class Assignment(db.Model):
     name = db.Column(db.String(255), nullable=False)
     description = db.Column(db.Text)
     due_date = db.Column(db.Date)
-    teacher_id = db.Column(db.Integer, db.ForeignKey('teachers.id'))
+    teacher_id = db.Column(db.Integer, db.ForeignKey('users.id'))  # Ensure this points to users.id
+    class_id = db.Column(db.Integer, db.ForeignKey('classes.id'), nullable=False)
 
     # Relationships
-    teacher = db.relationship('Teacher', backref='teacher_assignments')
+    teacher = db.relationship('User', backref='teacher_assignments')  # Fix: Change to User
+    class_info = db.relationship('Class', backref='assignments')
     reminders = db.relationship('AssignmentReminder', backref='assignment', lazy=True, cascade='all, delete-orphan')
+
 
 
 # AssignmentReminder Model
@@ -91,27 +93,25 @@ class ClassJoin(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     student_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     class_id = db.Column(db.Integer, db.ForeignKey('classes.id'), nullable=False)
-    teacher_id = db.Column(db.Integer, db.ForeignKey('teachers.id'), nullable=False)  # Add teacher_id
+    teacher_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)  # Fix: Use users.id
 
     # Relationships
-    student = db.relationship('User', back_populates='class_joins')
+    student = db.relationship('User', foreign_keys=[student_id], back_populates='class_joins')
     class_info = db.relationship('Class', back_populates='class_joins')
-    teacher = db.relationship('Teacher', backref='class_joins')  # Define relationship with Teacher
+    teacher = db.relationship('User', foreign_keys=[teacher_id], back_populates='teacher_classes')
 
+# # Teacher Model
+# class Teacher(db.Model):
+#     __tablename__ = 'teachers'
 
+#     id = db.Column(db.Integer, primary_key=True)
+#     name = db.Column(db.String(100), nullable=False)
 
-# Teacher Model
-class Teacher(db.Model):
-    __tablename__ = 'teachers'
+#     # Relationships
+#     assignments = db.relationship('Assignment', back_populates='teacher')
 
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), nullable=False)
-
-    # Relationships
-    assignments = db.relationship('Assignment', back_populates='teacher')
-
-    def __repr__(self):
-        return f"<Teacher(name={self.name})>"
+#     def __repr__(self):
+#         return f"<Teacher(name={self.name})>"
 
 
 # ClassCode Model
