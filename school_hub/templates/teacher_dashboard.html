@@ -92,12 +92,22 @@
             <h2>Assignments Created</h2>
             <div id="assignmentList">
                 {% for assignment in assignments %}
-                    <div class="assignment-card">
+                    <div class="assignment-card border p-3 mb-3">
                         <h3>{{ assignment.title }}</h3>
                         <p><strong>Class Code:</strong> {{ assignment.class_code }}</p>
                         <p><strong>Teacher:</strong> {{ assignment.teacher_username }}</p>
                         <p><strong>Description:</strong> {{ assignment.description }}</p>
-                        <p><strong>Due Date:</strong> {{ assignment.due_date }}</p>
+                        <p class="text-danger"><strong>Due Date:</strong> {{ assignment.due_date }}</p>
+                        
+                        <p><strong>Students:</strong> 
+                            {% if assignment.students %}
+                                {% for student in assignment.students %}
+                                    {{ student.username }}{% if not loop.last %}, {% endif %}
+                                {% endfor %}
+                            {% else %}
+                                None
+                            {% endif %}
+                        </p>
                     </div>
                 {% endfor %}
             </div>
@@ -106,42 +116,50 @@
             {% endif %}
         </div>
         
+        
 
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
- $(document).ready(function() {
-        fetchAssignments();
+$(document).ready(function() {
+    fetchAssignments();
 
-        function fetchAssignments() {
-            $.ajax({
-                url: '/get_teacher_assignments',
-                method: 'GET',
-                success: function(response) {
-                    const assignmentList = $('#assignmentList');
-                    assignmentList.empty();
+    function fetchAssignments() {
+        $.ajax({
+            url: '/get_teacher_assignments',
+            method: 'GET',
+            success: function(response) {
+                const assignmentList = $('#assignmentList');
+                assignmentList.empty();
 
-                    if (response.success && response.assignments.length > 0) {
-                        response.assignments.forEach(assignment => {
-                            assignmentList.append(`
-                                <div class="assignment-card border p-3 mb-3">
-                                    <h3>${assignment.name}</h3>
-                                    <p><strong>Class Code:</strong> ${assignment.class_code}</p>
-                                    <p><strong>Teacher:</strong> ${assignment.teacher_username}</p>
-                                    <p><strong>Description:</strong> ${assignment.description}</p>
-                                    <p class="text-danger"><strong>Due Date:</strong> ${assignment.due_date}</p>
-                                </div>
-                            `);
-                        });
-                    } else {
-                        assignmentList.append('<p>No assignments found.</p>');
-                    }
-                },
-                error: function(xhr, status, error) {
-                    console.error('Error fetching assignments:', error);
+                if (response.success && response.assignments.length > 0) {
+                    response.assignments.forEach(assignment => {
+                        let studentList = "<p><strong>Students:</strong> None</p>";
+                        if (assignment.students.length > 0) {
+                            studentList = `<p><strong>Students:</strong> ${assignment.students.map(s => s.username).join(', ')}</p>`;
+                        }
+
+                        assignmentList.append(`
+                            <div class="assignment-card border p-3 mb-3">
+                                <h3>${assignment.name}</h3>
+                                <p><strong>Class Code:</strong> ${assignment.class_code}</p>
+                                <p><strong>Teacher:</strong> ${assignment.teacher_username}</p>
+                                <p><strong>Description:</strong> ${assignment.description}</p>
+                                <p class="text-danger"><strong>Due Date:</strong> ${assignment.due_date}</p>
+                                ${studentList}
+                            </div>
+                        `);
+                    });
+                } else {
+                    assignmentList.append('<p>No assignments found.</p>');
                 }
-            });
-        }
-    });
+            },
+            error: function(xhr, status, error) {
+                console.error('Error fetching assignments:', error);
+            }
+        });
+    }
+});
+
 
  $(document).ready(function() {
         // Fetch class codes for the teacher

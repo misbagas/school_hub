@@ -328,7 +328,8 @@ def get_teacher_assignments():
             Assignment.description, 
             Assignment.due_date,
             ClassCode.code.label("class_code"),
-            User.username.label("teacher_username")
+            User.username.label("teacher_username"),
+            ClassCode.id.label("class_code_id")  # Needed to fetch students
         )
         .join(ClassCode, Assignment.class_id == ClassCode.id)
         .join(User, Assignment.teacher_id == User.id)
@@ -337,20 +338,24 @@ def get_teacher_assignments():
         .all()
     )
 
-    assignment_list = [
-        {
+    assignment_list = []
+
+    for a in assignments:
+        # Fetch students who joined this class
+        joined_students = StudentClassCode.query.filter_by(class_code_id=a.class_code_id).all()
+        students_data = [{'username': student.student.username} for student in joined_students]
+
+        assignment_list.append({
             "id": a.id,
             "name": a.name,
             "description": a.description,
             "due_date": a.due_date.strftime("%Y-%m-%d %H:%M"),
             "class_code": a.class_code,
-            "teacher_username": a.teacher_username
-        }
-        for a in assignments
-    ]
+            "teacher_username": a.teacher_username,
+            "students": students_data  # Include students in response
+        })
 
     return jsonify({"success": True, "assignments": assignment_list})
-
 
 
 @main.route('/get_assignments', methods=['GET'])
