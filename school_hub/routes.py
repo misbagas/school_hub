@@ -357,7 +357,6 @@ def get_teacher_assignments():
 
     return jsonify({"success": True, "assignments": assignment_list})
 
-
 @main.route('/get_assignments', methods=['GET'])
 @login_required
 def get_assignments():
@@ -368,25 +367,29 @@ def get_assignments():
     student_classes = StudentClassCode.query.filter_by(student_id=current_user.id).all()
     class_ids = [sc.class_code_id for sc in student_classes]
 
-    print(f"Student {current_user.id} is in classes: {class_ids}")  # Debugging log
+    # Fetch assignments from those classes, including teacher info
+    assignments = (
+        db.session.query(
+            Assignment.name.label('title'),
+            Assignment.description,
+            Assignment.due_date,
+            User.username.label('teacher_name')  # Fetch teacher's username
+        )
+        .join(User, Assignment.teacher_id == User.id)
+        .filter(Assignment.class_id.in_(class_ids))
+        .all()
+    )
 
-    # Fetch assignments from those classes
-    assignments = Assignment.query.filter(Assignment.class_id.in_(class_ids)).all()
-    
-    if not assignments:
-        print("No assignments found for this student.")  # Debugging log
-
-    # Convert to JSON format
     assignment_list = [
         {
-            'title': assignment.name,
+            'title': assignment.title,
             'description': assignment.description,
-            'due_date': assignment.due_date.strftime('%Y-%m-%d')
+            'due_date': assignment.due_date.strftime('%Y-%m-%d'),
+            'teacher_name': assignment.teacher_name  # Include teacher's name
         }
         for assignment in assignments
     ]
 
-    print(f"Assignments sent to frontend: {assignment_list}")  # Debugging log
     return jsonify({'success': True, 'assignments': assignment_list})
 
 # -------------------- Message Routes --------------------
