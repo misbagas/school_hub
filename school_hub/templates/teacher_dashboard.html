@@ -5,243 +5,490 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Teacher Dashboard</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-    .assignment-card {
-        background: #f8f9fa;
-        padding: 15px;
-        margin: 10px 0;
-        border-radius: 5px;
-        border-left: 5px solid #007bff;
-    }
-    .assignment-card h3 {
-        margin: 0;
-        color: #007bff;
-    }
-    .assignment-card p {
-        margin: 5px 0;
-        color: #555;
-    }
+        /* Navbar Styles */
+        .navbar {
+            display: flex;
+            align-items: center;
+            padding: 20px;
+            background-color: #f9f9f9;
+        }
+
+        .menu-btn {
+            cursor: pointer;
+            z-index: 2;
+            margin-right: 20px;
+        }
+
+        .menu-btn div {
+            width: 30px;
+            height: 4px;
+            background-color: #333;
+            margin: 6px 0;
+            transition: 0.4s;
+        }
+
+        .navbar-brand {
+            display: inline-block;
+            position: relative;
+            transition: all 0.3s ease;
+            padding: 5px 0;
+            font-size: 1.2em;
+            color: #333;
+            text-decoration: none;
+        }
+
+        .navbar-brand:hover {
+            transform: translateX(8px);
+        }
+
+        .navbar-brand::after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 2px;
+            bottom: 0;
+            left: 0;
+            background-color: currentColor;
+            transition: width 0.3s ease;
+        }
+
+        .navbar-brand:hover::after {
+            width: 100%;
+        }
+
+        /* Side Menu Styles */
+        .menu {
+            position: fixed;
+            top: 120px;
+            left: -250px;
+            width: 250px;
+            height: calc(100% - 70px);
+            background: #f2f2f2;
+            box-shadow: 2px 0 5px rgba(0,0,0,0.5);
+            transition: left 0.3s ease;
+            padding-top: 20px;
+            z-index: 1000;
+        }
+
+        .menu a {
+            display: block;
+            padding: 15px 25px;
+            text-decoration: none;
+            color: #333;
+            border-bottom: 1px solid #e1e1e1;
+        }
+
+        .menu a:hover {
+            background: #ddd;
+        }
+
+        .menu.active {
+            left: 0;
+        }
+
+        /* Assignment Styles */
+        .assignment {
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+
+        .due-date {
+            color: #d9534f;
+            font-weight: bold;
+        }
+
+        .error {
+            color: red;
+            font-weight: bold;
+        }
+
+        /* Plus Button Styles */
+        .plus-dropdown {
+            position: relative;
+            display: inline-block;
+            margin-left: auto;
+        }
+
+        .plus-button {
+            width: 40px;
+            height: 40px;
+            background-color: #4285f4;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            font-size: 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-left: 10px;
+        }
+
+        .plus-dropdown-content {
+            display: none;
+            position: absolute;
+            right: 0;
+            background-color: white;
+            min-width: 250px;
+            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+            z-index: 1;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+
+        .plus-dropdown-content a {
+            color: black;
+            padding: 12px 16px;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+        }
+
+        .plus-dropdown-content a:hover {
+            background-color: #f1f1f1;
+            color: #4285f4;
+        }
+
+        .show-dropdown {
+            display: block;
+            animation: fadeIn 0.3s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Assignment Card Styles */
+        .assignment-card {
+            background: #f8f9fa;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border-left: 5px solid #007bff;
+        }
+
+        .assignment-card h3 {
+            margin: 0;
+            color: #007bff;
+        }
+
+        .assignment-card p {
+            margin: 5px 0;
+            color: #555;
+        }
+
+        /* Main Content Styles */
+        body {
+            padding-top: 90px;
+        }
+
+        /* Responsive Styles */
+        @media (max-width: 991.98px) {
+            .plus-dropdown {
+                margin-left: auto;
+                margin-right: 15px;
+            }
+            
+            .navbar-toggler {
+                border: none;
+            }
+            
+            .navbar-toggler:focus {
+                box-shadow: none;
+            }
+        }
     </style>
 </head>
 <body>
     <!-- Navbar -->
-    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <nav class="navbar navbar-expand-lg navbar-light bg-light fixed-top shadow-sm">
         <div class="container-fluid">
-            <a class="navbar-brand" href="#">Teacher Dashboard</a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-                <span class="navbar-toggler-icon"></span>
+            <div class="menu-btn me-3" onclick="toggleMenu()">
+                <div></div>
+                <div></div>
+                <div></div>
+            </div>
+            <a class="navbar-brand" href="#" id="dashboardLink">Teacher Dashboard</a>
+
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <i class="fas fa-bars"></i>
             </button>
+
             <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
+                <ul class="navbar-nav me-auto">
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('main.profile') }}">Profile</a>
+                        <a class="nav-link" href="#">Profile</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('main.messages') }}">Messages</a>
+                        <a class="nav-link" href="#">Messages</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="/teacher/notifications">Notifications</a>
+                        <a class="nav-link" href="#">Notifications</a>
+                    </li>
+                </ul>
+                
+                <!-- Plus Button Dropdown in Navbar -->
+                <ul class="navbar-nav">
+                    <li class="nav-item plus-dropdown">
+                        <button class="plus-button" onclick="togglePlusDropdown(event)">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                        <div class="plus-dropdown-content" id="plusDropdown">
+    <a href="#" data-bs-toggle="modal" data-bs-target="#joinClassModal">
+        <i class="fas fa-sign-in-alt me-2"></i>Gabung ke kelas
+    </a>
+    <a href="#" data-bs-toggle="modal" data-bs-target="#studentsModal">
+        <i class="fas fa-users me-2"></i>Lihat Pelajar yang terdaftar
+    </a>
+    <a href="#" data-bs-toggle="modal" data-bs-target="#createAssignmentModal">
+        <i class="fas fa-tasks me-2"></i>Buat Tugas Untuk Pelajar
+    </a>
+    <a href="#" data-bs-toggle="modal" data-bs-target="#assignmentsModal">
+        <i class="fas fa-clipboard-list me-2"></i>Tugas yang sudah terdaftar
+    </a>
+</div>
                     </li>
                 </ul>
             </div>
         </div>
     </nav>
 
+    <!-- Side Menu -->
+    <div class="menu" id="sideMenu">
+        <a href="#"><i class="fas fa-home me-2"></i>Dashboard</a>
+        <a href="#"><i class="fas fa-book me-2"></i>Classes</a>
+        <a href="#"><i class="fas fa-tasks me-2"></i>Assignments</a>
+        <a href="#"><i class="fas fa-chart-bar me-2"></i>Reports</a>
+        <a href="#"><i class="fas fa-cog me-2"></i>Settings</a>
+    </div>
+
     <!-- Main Content -->
-    <div class="container mt-4">
-        <!-- View Joined Students -->
-        <div class="mb-4">
-            <h2>View Joined Students</h2>
-            <div class="input-group">
-                <input type="text" id="classCode" class="form-control" placeholder="Enter class code">
-                <button id="viewJoinedBtn" class="btn btn-primary">View Joined Students</button>
-            </div>
-            <ul id="joinedStudentsList" class="list-group mt-3"></ul>
+    <div class="container mt-4" id="mainContent">
+        <!-- Content will be loaded here dynamically -->
+        <div class="alert alert-info">
+            Select an option from the plus button menu to get started.
         </div>
+    </div>
 
-        <div id="assignmentForm" class="mb-4">
-            <h2>Create Assignment</h2>
-            <div class="mb-3">
-                <label for="classCodeSelect" class="form-label">Class Code:</label>
-                <select id="classCodeSelect" class="form-control">
-                    <option value="">Select a class</option>
-                </select>
-            </div>
-            <div class="mb-3">
-                <label for="studentSelect" class="form-label">Select Student:</label>
-                <select id="studentSelect" class="form-control">
-                    <option value="">Select a student</option>
-                </select>
-            </div>
-            <div class="mb-3">
-                <label for="assignmentTitle" class="form-label">Title:</label>
-                <input type="text" id="assignmentTitle" class="form-control" placeholder="Assignment Title">
-            </div>
-            <div class="mb-3">
-                <label for="assignmentDescription" class="form-label">Description:</label>
-                <textarea id="assignmentDescription" class="form-control" placeholder="Assignment Description"></textarea>
-            </div>
-            <div class="mb-3">
-                <label for="dueDate" class="form-label">Due Date:</label>
-                <input type="datetime-local" id="dueDate" class="form-control">
-            </div>
-            <button id="sendAssignment" class="btn btn-primary">Send Assignment</button>
-        </div>
-
-        <div class="container mt-4">
-            <h2>Assignments Created</h2>
-            <div id="assignmentList">
-                {% for assignment in assignments %}
-                    <div class="assignment-card border p-3 mb-3">
-                        <h3>{{ assignment.title }}</h3>
-                        <p><strong>Class Code:</strong> {{ assignment.class_code }}</p>
-                        <p><strong>Teacher:</strong> {{ assignment.teacher_username }}</p>
-                        <p><strong>Description:</strong> {{ assignment.description }}</p>
-                        <p class="text-danger"><strong>Due Date:</strong> {{ assignment.due_date }}</p>
-                        
-                        <p><strong>Students:</strong> 
-                            {% if assignment.students %}
-                                {% for student in assignment.students %}
-                                    {{ student.username }}{% if not loop.last %}, {% endif %}
-                                {% endfor %}
-                            {% else %}
-                                None
-                            {% endif %}
-                        </p>
+    <!-- Join Class Modal -->
+    <div class="modal fade" id="joinClassModal" >
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Gabung ke Kelas</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="joinClassCode" class="form-label">Kode Kelas</label>
+                        <input type="text" class="form-control" id="joinClassCode" placeholder="Masukkan kode kelas">
                     </div>
-                {% endfor %}
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="button" class="btn btn-primary" onclick="joinClass()">Gabung</button>
+                </div>
             </div>
-            {% if assignments|length == 0 %}
-                <p>No assignments created yet.</p>
-            {% endif %}
         </div>
-        
-        
+    </div>
+<!-- Registered Students Modal -->
+    <div class="modal fade" id="studentsModal">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Lihat Pelajar yang Terdaftar</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="input-group mb-3">
+                        <input type="text" id="viewClassCode" class="form-control" placeholder="Masukkan kode kelas">
+                        <button class="btn btn-primary" id="viewStudentsBtn">Lihat</button>
+                    </div>
+                    <div id="studentsList" class="list-group"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Assignment Modal -->
+    <div class="modal fade" id="createAssignmentModal">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Buat Tugas Untuk Pelajar</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="assignmentClassCode" class="form-label">Kode Kelas:</label>
+                        <select id="assignmentClassCode" class="form-control">
+                            <option value="">Pilih kelas</option>
+                            <option value="MATH101">Matematika 101</option>
+                            <option value="SCI202">Sains 202</option>
+                            <option value="ENG305">Bahasa Inggris 305</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="assignmentStudent" class="form-label">Pilih Pelajar:</label>
+                        <select id="assignmentStudent" class="form-control">
+                            <option value="">Pilih pelajar</option>
+                            <option value="student1">John Doe</option>
+                            <option value="student2">Jane Smith</option>
+                            <option value="student3">Mike Johnson</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="assignmentTitle" class="form-label">Judul Tugas:</label>
+                        <input type="text" id="assignmentTitle" class="form-control" placeholder="Judul tugas">
+                    </div>
+                    <div class="mb-3">
+                        <label for="assignmentDesc" class="form-label">Deskripsi:</label>
+                        <textarea id="assignmentDesc" class="form-control" rows="3" placeholder="Deskripsi tugas"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="assignmentDueDate" class="form-label">Batas Waktu:</label>
+                        <input type="datetime-local" id="assignmentDueDate" class="form-control">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="button" class="btn btn-primary" onclick="createAssignment()">Buat Tugas</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Registered Assignments Modal -->
+    <div class="modal fade" id="assignmentsModal">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Tugas yang Sudah Terdaftar</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="assignmentsList">
+                        <div class="assignment-card">
+                            <h5>Tugas Matematika - Aljabar</h5>
+                            <p><strong>Kelas:</strong> MATH101</p>
+                            <p><strong>Deskripsi:</strong> Selesaikan soal aljabar di halaman 45-50</p>
+                            <p class="text-danger"><strong>Batas Waktu:</strong> 10 Juni 2025, 23:59</p>
+                            <p><strong>Pelajar:</strong> John Doe, Jane Smith</p>
+                        </div>
+                        <div class="assignment-card">
+                            <h5>Proyek Sains - Energi Terbarukan</h5>
+                            <p><strong>Kelas:</strong> SCI202</p>
+                            <p><strong>Deskripsi:</strong> Buat presentasi tentang energi terbarukan</p>
+                            <p class="text-danger"><strong>Batas Waktu:</strong> 15 Juni 2025, 23:59</p>
+                            <p><strong>Pelajar:</strong> Mike Johnson</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-$(document).ready(function() {
-    fetchAssignments();
+         // Toggle side menu
+        function toggleMenu() {
+            document.getElementById('sideMenu').classList.toggle('active');
+        }
 
-    function fetchAssignments() {
-        $.ajax({
-            url: '/get_teacher_assignments',
-            method: 'GET',
-            success: function(response) {
-                const assignmentList = $('#assignmentList');
-                assignmentList.empty();
+        // Toggle plus dropdown
+        function togglePlusDropdown(event) {
+            event.stopPropagation();
+            document.getElementById("plusDropdown").classList.toggle("show-dropdown");
+        }
 
-                if (response.success && response.assignments.length > 0) {
-                    response.assignments.forEach(assignment => {
-                        let studentList = "<p><strong>Students:</strong> None</p>";
-                        if (assignment.students.length > 0) {
-                            studentList = `<p><strong>Students:</strong> ${assignment.students.map(s => s.username).join(', ')}</p>`;
-                        }
-
-                        assignmentList.append(`
-                            <div class="assignment-card border p-3 mb-3">
-                                <h3>${assignment.name}</h3>
-                                <p><strong>Class Code:</strong> ${assignment.class_code}</p>
-                                <p><strong>Teacher:</strong> ${assignment.teacher_username}</p>
-                                <p><strong>Description:</strong> ${assignment.description}</p>
-                                <p class="text-danger"><strong>Due Date:</strong> ${assignment.due_date}</p>
-                                ${studentList}
-                            </div>
-                        `);
-                    });
-                } else {
-                    assignmentList.append('<p>No assignments found.</p>');
-                }
-            },
-            error: function(xhr, status, error) {
-                console.error('Error fetching assignments:', error);
+        // Close dropdowns when clicking outside
+        document.addEventListener('click', function(event) {
+            if (!event.target.closest('.plus-dropdown')) {
+                document.getElementById("plusDropdown").classList.remove("show-dropdown");
+            }
+            if (!event.target.closest('.menu-btn') && !event.target.closest('.menu')) {
+                document.getElementById('sideMenu').classList.remove('active');
             }
         });
-    }
-});
 
+        // Dashboard link animation
+        document.getElementById('dashboardLink').addEventListener('click', function(e) {
+            e.preventDefault();
+            this.classList.add('clicked');
+            setTimeout(() => {
+                this.classList.remove('clicked');
+                window.location.href = this.href;
+            }, 300);
+        });
 
- $(document).ready(function() {
-        // Fetch class codes for the teacher
-        $.ajax({
-            url: '/get_class_codes',
-            method: 'GET',
-            success: function(data) {
-                const classCodeSelect = $('#classCodeSelect');
-                classCodeSelect.empty();
-                classCodeSelect.append('<option value="">Select a class</option>');
-                data.forEach(code => {
-                    classCodeSelect.append(`<option value="${code.code}">${code.code} - ${code.description}</option>`);
+        // Join class function
+        function joinClass() {
+            const classCode = document.getElementById('joinClassCode').value;
+            if (classCode) {
+                alert(`Berhasil bergabung dengan kelas ${classCode}`);
+                const modal = bootstrap.Modal.getInstance(document.getElementById('joinClassModal'));
+                modal.hide();
+            } else {
+                alert('Silakan masukkan kode kelas');
+            }
+        }
+
+        // View students function
+        function viewStudents() {
+            const classCode = document.getElementById('viewClassCode').value;
+            const studentsList = document.getElementById('studentsList');
+            
+            if (classCode) {
+                // Sample data - in a real app this would come from an API
+                const sampleData = {
+                    'MATH101': ['John Doe', 'Jane Smith', 'Mike Johnson'],
+                    'SCI202': ['Alice Brown', 'Bob Wilson'],
+                    'ENG305': ['David Lee', 'Emily Chen', 'Robert Taylor', 'Sarah Williams']
+                };
+                
+                const students = sampleData[classCode] || ['Tidak ada pelajar yang terdaftar di kelas ini'];
+                
+                studentsList.innerHTML = '';
+                students.forEach(student => {
+                    const item = document.createElement('div');
+                    item.className = 'list-group-item';
+                    item.textContent = student;
+                    studentsList.appendChild(item);
                 });
-            },
-            error: function(xhr, status, error) {
-                console.error('Error fetching class codes:', error);
-                alert('Failed to fetch class codes. Please try again.');
+            } else {
+                alert('Silakan masukkan kode kelas');
             }
-        });
+        }
 
-        // Fetch students when class code is selected
-        $('#classCodeSelect').change(function() {
-            const selectedClassCode = $(this).val();
-            const studentSelect = $('#studentSelect');
-            studentSelect.empty();
-            studentSelect.append('<option value="">Select a student</option>');
-
-            if (!selectedClassCode) return;
-
-            $.ajax({
-                url: `/get_joined_students?class_code=${selectedClassCode}`,
-                method: 'GET',
-                success: function(response) {
-                    if (response.success) {
-                        response.students.forEach(student => {
-                            studentSelect.append(`<option value="${student.id}">${student.username}</option>`);
-                        });
-                    } else {
-                        alert(response.message);
-                    }
-                },
-                error: function(xhr, status, error) {
-                    console.error('Error fetching students:', error);
-                    alert('Failed to fetch students.');
-                }
-            });
-        });
-
-        // Send Assignment Button Click
-        $('#sendAssignment').click(() => {
-            const classCode = $('#classCodeSelect').val();
-            const studentId = $('#studentSelect').val();
-            const title = $('#assignmentTitle').val();
-            const description = $('#assignmentDescription').val();
-            const dueDate = $('#dueDate').val();
-
-            if (!classCode || !studentId || !title || !description || !dueDate) {
-                alert('Please fill out all fields.');
-                return;
+        // Create assignment function
+        function createAssignment() {
+            const title = document.getElementById('assignmentTitle').value;
+            if (title) {
+                alert(`Tugas "${title}" berhasil dibuat!`);
+                const modal = bootstrap.Modal.getInstance(document.getElementById('createAssignmentModal'));
+                modal.hide();
+            } else {
+                alert('Silakan masukkan judul tugas');
             }
+        }
 
-            $.ajax({
-                url: '/create_assignment',
-                method: 'POST',
-                contentType: 'application/json',
-                data: JSON.stringify({
-                    class_code: classCode,
-                    student_id: studentId,
-                    title: title,
-                    description: description,
-                    due_date: dueDate
-                }),
-                success: function(response) {
-                    alert(response.message);
-                },
-                error: function(xhr, status, error) {
-                    alert('Error sending assignment: ' + error);
-                }
-            });
+        // Initialize event listeners when modal is shown
+        document.getElementById('studentsModal').addEventListener('shown.bs.modal', function() {
+            document.getElementById('viewStudentsBtn').addEventListener('click', viewStudents);
         });
-    });
-    
     </script>
 </body>
 </html>

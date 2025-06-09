@@ -12,7 +12,7 @@ db = SQLAlchemy()
 login_manager = LoginManager()
 
 def create_app():
-    app = Flask(__name__, template_folder='/home/misbahskuy/school_hub/school_hub/templates')  # Add template_folder here
+    app = Flask(__name__, template_folder=r'C:\Users\misba\Desktop\school_hub\school_hub\templates')  # Add template_folder here
     
     # Configuration
     app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'c0af5ac84d3fe3a898fbc6866c65d6bba8690a7891213e25')  # Using default fallback
